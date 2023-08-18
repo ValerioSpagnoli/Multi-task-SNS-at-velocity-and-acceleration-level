@@ -32,53 +32,31 @@ end
 
 
 function main(sim, simID)
-    [res,objs]=sim.simxGetObjects(simID,sim.sim_handle_all,sim.simx_opmode_blocking);
-    if (res==sim.simx_return_ok)
-        fprintf('Number of objects in the scene: %d\n',length(objs));
-    else
-        fprintf('Remote API function call returned with error code: %d\n',res);
-    end
+    n = 7; % number of joints (KUKA LBR4 has 7 joints)
+    joints = zeros(1,n);
 
-    for i=1:7
+    for i=1:n
         [res, joint] = sim.simxGetObjectHandle(simID,sprintf('LBR4p_joint%d', i),sim.simx_opmode_oneshot_wait);
         if res ~= sim.simx_return_ok 
-            fprintf('Error: cannot handle "simxGetObjectHandle" remote API for LBR4p_joint1.');
-            return;
-        else
-            joints = [joints, joint];
+            fprintf('Error: cannot handle "simxGetObjectHandle" remote API for LBR4p_joint1.\n');
+            return;   
         end
-
+        joints(i) = joint;
     end
-
-    [res_1, joint_1] = sim.simxGetObjectHandle(simID,'LBR4p_joint1',sim.simx_opmode_oneshot_wait);
-    [res_2, joint_2] = sim.simxGetObjectHandle(simID,'LBR4p_joint2',sim.simx_opmode_oneshot_wait);
-    [res_3, joint_3] = sim.simxGetObjectHandle(simID,'LBR4p_joint3',sim.simx_opmode_oneshot_wait);
-    [res_4, joint_4] = sim.simxGetObjectHandle(simID,'LBR4p_joint4',sim.simx_opmode_oneshot_wait);
-    [res_5, joint_5] = sim.simxGetObjectHandle(simID,'LBR4p_joint5',sim.simx_opmode_oneshot_wait);
-    [res_6, joint_6] = sim.simxGetObjectHandle(simID,'LBR4p_joint6',sim.simx_opmode_oneshot_wait);
-    [res_7, joint_7] = sim.simxGetObjectHandle(simID,'LBR4p_joint7',sim.simx_opmode_oneshot_wait);
-    if res_1 ~= sim.simx_return_ok 
-        fprintf('Error: cannot handle "simxGetObjectHandle" remote API for LBR4p_joint1.');
-        return;
-    elseif res_2 ~= sim.simx_return_ok 
-
-    end
-
-    joints = [joint_1, joint_2, joint_3, joint_4, joint_5, joint_6, joint_7];
 
     pause(2);
 
-    while(sim.simxGetConnectionId(simID) ~= -1)  % while v-rep connection is still active
+    while(sim.simxGetConnectionId(simID) ~= -1)
         %t = sim.simxGetLastCmdTime(simID)/1000.0;
         %if (t > 150) 
         %break; 
         %end
 
         for i=1:length(joints)
-            [joint_position, joint_velocity, joint_acceleration] = getJointState(sim, simID, joints(i));
+            %[joint_position, joint_velocity, joint_acceleration] = getJointState(sim, simID, joints(i));
 
-            fprintf('joint_%d position: %f [rad], %f [deg]\n', i, joint_position, rad2deg(joint_position));
-            fprintf('joint_%d velocity: %f [rad/s], %f [deg/s]\n', i, joint_velocity, convangvel([joint_velocity],'deg/s','rad/s'));
+            %fprintf('joint_%d position: %f [rad], %f [deg]\n', i, joint_position, rad2deg(joint_position));
+            %fprintf('joint_%d velocity: %f [rad/s], %f [deg/s]\n', i, joint_velocity, convangvel([joint_velocity],'deg/s','rad/s'));
             fprintf('joint_%d acceleration: %f [rad/s^2], %f [deg/s^2]\n\n', i, joint_acceleration, convangacc([joint_acceleration],'deg/s^2','rad/s^2'));
         end
         fprintf('----------------------------------------------------------------------------\n')
@@ -93,13 +71,13 @@ function [joint_position, joint_velocity, joint_acceleration] = getJointState(si
     [res_v, ~,joint_velocity, ~, ~]=sim.simxCallScriptFunction(simID, '/LBR4p', sim.sim_scripttype_childscript,'getJointVelocity',[joint],[],'',[],sim.simx_opmode_oneshot_wait);
     [res_a, ~,joint_acceleration, ~, ~]=sim.simxCallScriptFunction(simID, '/LBR4p', sim.sim_scripttype_childscript,'getJointAcceleration',[joint],[],'',[],sim.simx_opmode_oneshot_wait);
     if res_p ~= sim.simx_return_ok 
-        fprintf('Error: cannot handle "simxCallScriptFunction" with "getJointPosition" script.');
+        fprintf('Error: cannot handle "simxCallScriptFunction" with "getJointPosition" script\n.');
         joint_position = -1.0;
     elseif res_v ~= sim.simx_return_ok 
-        fprintf('Error: cannot handle "simxCallScriptFunction" with "getJointVelocity" script.');
+        fprintf('Error: cannot handle "simxCallScriptFunction" with "getJointVelocity" script\n.');
         joint_velocity = -1.0;
     elseif res_a ~= sim.simx_return_ok 
-        fprintf('Error: cannot handle "simxCallScriptFunction" with "getJointAcceleration" script.');
+        fprintf('Error: cannot handle "simxCallScriptFunction" with "getJointAcceleration" script\n.');
         joint_acceleration = -1;
     end
 end
