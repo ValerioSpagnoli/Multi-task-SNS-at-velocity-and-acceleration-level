@@ -108,7 +108,7 @@ function q_dot_SNS = SNS_velocity_multitask(m, n, J, x_dot, bounds, q, T, verbos
         
             for i=1:n
                 if verbose
-                fprintf('q_dot_bar_k(i) = %f, bounds_Q_dot_max(i) = %f, bounds_Q_dot_min(i) = %f\n', q_dot_bar_k(i), bounds_Q_dot_max(i), bounds_Q_dot_min(i));
+                fprintf('q_dot_bar_k(i) = %f, bounds_Q_dot_max(i) = %f, bounds_Q_dot_min(i) = %f\n', q_dot_bar_k(i), bounds_Q_dot_max(i), bounds_Q(i));
                 end
                 if q_dot_bar_k(i) > bounds_Q_dot_max(i) || q_dot_bar_k(i) < bounds_Q_dot_min(i)
                     if verbose
@@ -134,7 +134,7 @@ function q_dot_SNS = SNS_velocity_multitask(m, n, J, x_dot, bounds, q, T, verbos
                 fprintf('b = \n');disp(b)
                 end
 
-                [task_scaling_factor, most_critical_joint] = getTaskScalingFactor(n, a, b, bounds_Q_dot_max, bounds_Q_dot_min, verbose); 
+                [task_scaling_factor, most_critical_joint] = getTaskScalingFactor(n, a, b, bounds_max_velocity, bounds_min_velocity, verbose); 
                 j = most_critical_joint;
 
                 if verbose                
@@ -164,10 +164,10 @@ function q_dot_SNS = SNS_velocity_multitask(m, n, J, x_dot, bounds, q, T, verbos
 
 
                 W_k(j,j) = 0;
-                if q_dot_bar_k(j) > bounds_Q_dot_max(j)
-                    q_dot_N_k(j) = round( bounds_Q_dot_max(j)-q_dot_bar_km1(j) ,4);
-                elseif q_dot_bar_k(j) < bounds_Q_dot_min(j)
-                    q_dot_N_k(j) = round( bounds_Q_dot_min(j)-q_dot_bar_km1(j) ,4);
+                if q_dot_bar_k(j) > bounds_max_velocity(j)
+                    q_dot_N_k(j) = round( bounds_max_velocity(j)-q_dot_bar_km1(j) ,4);
+                elseif q_dot_bar_k(j) < bounds_min_velocity(j)
+                    q_dot_N_k(j) = round( bounds_min_velocity(j)-q_dot_bar_km1(j) ,4);
                 end
                 
                 P_bar_k = round( (eye(n) - pinv((eye(n)-W_k)*P_km1))*P_km1 ,4);
@@ -191,11 +191,11 @@ function q_dot_SNS = SNS_velocity_multitask(m, n, J, x_dot, bounds, q, T, verbos
                     q_dot_bar_N_k = round( pinv((eye(n)-W_k)*P_km1)*q_dot_N_k ,4);
                     q_dot_tilde_k = round( q_dot_bar_km1 + q_dot_bar_N_k ,4);
                     
-                    q_dot_bar_k = round( q_dot_tilde_k + round(pinv(J_k*P_bar_k),4)*(s_k*x_dot_k - J_k*q_dot_tilde_k) ,4);
+                    JxP_bar=J_k*P_bar_k;
+                    JxP_bar_pinv = round( transpose(JxP_bar)*((JxP_bar*transpose(JxP_bar))^-1) ,4);
                     
-%                     JxP_bar=J_k*P_bar_k;
-%                     JxP_bar_pinv = round( transpose(JxP_bar)*((JxP_bar*transpose(JxP_bar))^-1) ,4);
-%                     q_dot_bar_k = round( q_dot_tilde_k + JxP_bar_pinv*(s_k*x_dot_k - J_k*q_dot_tilde_k) ,4);
+                    %q_dot_bar_k = round( q_dot_tilde_k + round(pinv(J_k*P_bar_k),4)*(s_k*x_dot_k - J_k*q_dot_tilde_k) ,4);
+                    q_dot_bar_k = round( q_dot_tilde_k + JxP_bar_pinv*(s_k*x_dot_k - J_k*q_dot_tilde_k) ,4);
 
                     limit_exceeded = false;   
 
