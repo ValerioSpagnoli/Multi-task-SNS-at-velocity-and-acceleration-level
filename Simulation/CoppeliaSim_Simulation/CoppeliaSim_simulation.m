@@ -25,7 +25,7 @@ classdef CoppeliaSim_simulation
 
             sim.simxGetPingTime(clientID);        
             sim.simxFinish(clientID);
-            disp('Connection destroyed. Simulation ended.')
+            disp('Simulation ended. Connection destroyed.')
         end
 
         %% main function

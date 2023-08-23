@@ -70,7 +70,7 @@ classdef Simulation
                 x = round(self.path(1:3,k),4);
                 m = {length(x)};
         
-                %fprintf('k = %d, norm(ee_position - x) = %f\n', k, norm(ee_position-x));
+                fprintf('k = %d, norm(ee_position - x) = %f\n', k, norm(ee_position-x));
             
                 if norm(ee_position - x) < 0.01
                     k = k+1;
