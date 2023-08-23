@@ -1,8 +1,5 @@
 classdef KUKA_LBR_IIWA7
     properties
-        % robot model from Robotics System Toolbox
-        robot 
-
         % number of degrees of freedom of robot
         ndof
         
@@ -28,15 +25,14 @@ classdef KUKA_LBR_IIWA7
         q_dot_0
         q_ddot_0
         ee_position_0
+
+        % name of robot
+        name = 'KUKA_LBR_IIWA_7_R800';
     end
 
     methods
         %% constructur
         function self = KUKA_LBR_IIWA7(q_0, q_dot_0, q_ddot_0)
-
-            % import robot from robotics system toolbox
-            self.robot = importrobot('iiwa7.urdf'); 
-            self.robot.DataFormat = 'row';
             self.ndof = 7;
 
             % define symbolic variables
@@ -88,15 +84,15 @@ classdef KUKA_LBR_IIWA7
             self.J_dot = subs(simplify(diff(self.J, t)), {diff(q_1), diff(q_2), diff(q_3), diff(q_4), diff(q_5), diff(q_6), diff(q_7)}, {str2sym('q_dot_1(t)'), str2sym('q_dot_2(t)'),str2sym('q_dot_3(t)'),str2sym('q_dot_4(t)'),str2sym('q_dot_5(t)'),str2sym('q_dot_6(t)'),str2sym('q_dot_7(t)')});
             
             % define bounds
-            bounds_min_position = constraintJointBounds(self.robot).Bounds(:,1)';
-            bounds_max_position = constraintJointBounds(self.robot).Bounds(:,2)';
+            bounds_max_position = [deg2rad(170), deg2rad(120), deg2rad(170), deg2rad(120), deg2rad(170), deg2rad(120), deg2rad(175)];
+            bounds_min_position = -bounds_max_position;
             self.bounds_position = double([bounds_min_position;bounds_max_position]);
             
             bounds_max_velocity = round([deg2rad(100), deg2rad(110), deg2rad(100), deg2rad(130), deg2rad(130), deg2rad(180), deg2rad(180)],4);
             bounds_min_velocity = -bounds_max_velocity;
             self.bounds_velocity = double([bounds_min_velocity;bounds_max_velocity]);
             
-            bounds_max_acceleration = [300, 300, 300, 300, 300, 300, 300];
+            bounds_max_acceleration = [deg2rad(300), deg2rad(300), deg2rad(300), deg2rad(300), deg2rad(300), deg2rad(300), deg2rad(300)];
             bounds_min_acceleration = -bounds_max_acceleration;  
             self.bounds_acceleration = double([bounds_min_acceleration;bounds_max_acceleration]);
 

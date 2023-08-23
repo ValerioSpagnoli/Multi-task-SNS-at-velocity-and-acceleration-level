@@ -83,6 +83,7 @@ function q_dot_SNS = SNS_velocity_multitask(m, n, J, x_dot, bounds, q, T, verbos
             q_dot_bar_N_k = round( pinv((eye(n)-W_k)*P_km1)*q_dot_N_k ,4);
             q_dot_tilde_k = round( q_dot_bar_km1 + q_dot_bar_N_k ,4);
             q_dot_bar_k = round( q_dot_tilde_k + round(pinv(J_k*P_bar_k),4)*(x_dot_k - J_k*q_dot_tilde_k) ,4);
+
 %             JxP_bar=J_k*P_bar_k;
 %             JxP_bar_pinv = round( transpose(JxP_bar)*((JxP_bar*transpose(JxP_bar))^-1) ,4);
 %             q_dot_bar_k = round( q_dot_tilde_k + JxP_bar_pinv*(x_dot_k - J_k*q_dot_tilde_k) ,4);
@@ -190,9 +191,8 @@ function q_dot_SNS = SNS_velocity_multitask(m, n, J, x_dot, bounds, q, T, verbos
 
                     q_dot_bar_N_k = round( pinv((eye(n)-W_k)*P_km1)*q_dot_N_k ,4);
                     q_dot_tilde_k = round( q_dot_bar_km1 + q_dot_bar_N_k ,4);
-                    
                     q_dot_bar_k = round( q_dot_tilde_k + round(pinv(J_k*P_bar_k),4)*(s_k*x_dot_k - J_k*q_dot_tilde_k) ,4);
-                    
+
 %                     JxP_bar=J_k*P_bar_k;
 %                     JxP_bar_pinv = round( transpose(JxP_bar)*((JxP_bar*transpose(JxP_bar))^-1) ,4);
 %                     q_dot_bar_k = round( q_dot_tilde_k + JxP_bar_pinv*(s_k*x_dot_k - J_k*q_dot_tilde_k) ,4);

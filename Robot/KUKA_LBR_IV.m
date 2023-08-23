@@ -1,4 +1,4 @@
-classdef KUKA_LBR_IIWA7
+classdef KUKA_LBR_IV
     properties
         % robot model from Robotics System Toolbox
         robot 
@@ -28,11 +28,14 @@ classdef KUKA_LBR_IIWA7
         q_dot_0
         q_ddot_0
         ee_position_0
+
+        % name of robot
+        name = 'KUKA_LBR_IV';
     end
 
     methods
         %% constructur
-        function self = KUKA_LBR_IIWA7(q_0, q_dot_0, q_ddot_0)
+        function self = KUKA_LBR_IV(q_0, q_dot_0, q_ddot_0)
 
             % import robot from robotics system toolbox
             self.robot = importrobot('iiwa7.urdf'); 
@@ -55,13 +58,13 @@ classdef KUKA_LBR_IIWA7
             self.q_ddot = [q_ddot_1;q_ddot_2;q_ddot_3;q_ddot_4;q_ddot_5;q_ddot_6;q_ddot_7];
 
             % define DH matrix
-            DH_matrix = [[-pi/2 0.340 0 q_1];
-                        [ pi/2  0     0 q_2];
-                        [ pi/2  0.400 0 q_3];
-                        [-pi/2  0     0 q_4];
-                        [-pi/2  0.400 0 q_5];
-                        [ pi/2  0     0 q_6];
-                        [    0  0.126 0 q_7];];
+            DH_matrix = [[ pi/2 0     0 q_1];
+                         [-pi/2 0     0 q_2];
+                         [-pi/2 0.400 0 q_3];
+                         [ pi/2 0     0 q_4];
+                         [ pi/2 0.390 0 q_5];
+                         [-pi/2 0     0 q_6];
+                         [    0 0     0 q_7];];
 
             % symbolic end effector position: ee_position
             T = {1,self.ndof};
@@ -88,15 +91,15 @@ classdef KUKA_LBR_IIWA7
             self.J_dot = subs(simplify(diff(self.J, t)), {diff(q_1), diff(q_2), diff(q_3), diff(q_4), diff(q_5), diff(q_6), diff(q_7)}, {str2sym('q_dot_1(t)'), str2sym('q_dot_2(t)'),str2sym('q_dot_3(t)'),str2sym('q_dot_4(t)'),str2sym('q_dot_5(t)'),str2sym('q_dot_6(t)'),str2sym('q_dot_7(t)')});
             
             % define bounds
-            bounds_min_position = constraintJointBounds(self.robot).Bounds(:,1)';
-            bounds_max_position = constraintJointBounds(self.robot).Bounds(:,2)';
+            bounds_max_position = [deg2rad(170), deg2rad(120), deg2rad(170), deg2rad(120), deg2rad(170), deg2rad(120), deg2rad(170)];
+            bounds_min_position = -bounds_max_position;
             self.bounds_position = double([bounds_min_position;bounds_max_position]);
             
             bounds_max_velocity = round([deg2rad(100), deg2rad(110), deg2rad(100), deg2rad(130), deg2rad(130), deg2rad(180), deg2rad(180)],4);
             bounds_min_velocity = -bounds_max_velocity;
             self.bounds_velocity = double([bounds_min_velocity;bounds_max_velocity]);
             
-            bounds_max_acceleration = [300, 300, 300, 300, 300, 300, 300];
+            bounds_max_acceleration = [deg2rad(300), deg2rad(300), deg2rad(300), deg2rad(300), deg2rad(300), deg2rad(300), deg2rad(300)];
             bounds_min_acceleration = -bounds_max_acceleration;  
             self.bounds_acceleration = double([bounds_min_acceleration;bounds_max_acceleration]);
 
