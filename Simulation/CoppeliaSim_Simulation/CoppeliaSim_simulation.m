@@ -32,7 +32,8 @@ classdef CoppeliaSim_simulation
         function main(self, sim, clientID)
             n = self.robot.ndof;
             robot_name = self.robot.name;
-
+            fprintf('Robot: %s\n', robot_name);
+            
             if strcmp(robot_name,'KUKA_LBR_IIWA_7_R800')
                 robot_name = 'LBRiiwa7R800';
             elseif strcmp(robot_name,'KUKA_LBR_IV')
@@ -43,6 +44,8 @@ classdef CoppeliaSim_simulation
             for i=1:n
                 if strcmp(robot_name,'LBRiiwa7R800')
                     joint_name = strcat('LBR_iiwa_7_R800', sprintf('_joint%d',i));
+                elseif strcmp(robot_name, 'LBR4p')
+                    joint_name = strcat('LBR4p', sprintf('_joint%d',i));
                 end
 
                 [res, joint] = sim.simxGetObjectHandle(clientID,joint_name,sim.simx_opmode_oneshot_wait);
