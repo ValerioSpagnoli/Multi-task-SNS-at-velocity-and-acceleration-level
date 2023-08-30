@@ -206,8 +206,8 @@ function q_ddot_SNS = SNS_acceleration_multitask(m, n, J, J_dot, x_ddot, bounds,
                 fprintf('limit_exceeded: %d\n\n', limit_exceeded);                
                 end
 
-                a = round( pinv_Jk_x_Pbark*x_ddot_k + pinv_Jk_x_Pbark*J_dot_k*q_dot ,4); % q_ddot desiderata
-                b = round( q_ddot_bar_k - a ,4); % differenza tra q_ddot_ottenuta e q_ddot_desiderata
+                a = round( pinv_Jk_x_Pbark*x_ddot_k ,4); % q_dot desiderata
+                b = round( q_ddot_bar_k - a ,4); % 
                 
                 if verbose
                 fprintf('..........................................................\n')
@@ -307,7 +307,6 @@ function q_ddot_SNS = SNS_acceleration_multitask(m, n, J, J_dot, x_ddot, bounds,
     end
     
     q_ddot_SNS = q_ddot_bar_k;
-end
 
 
 % SNS Algorithm 2
@@ -318,7 +317,7 @@ function [task_scaling_factor, most_critical_joint] = getTaskScalingFactor(n, a,
     
     for i=1:n
 
-        Smax = round( (bounds_max(i)-b(i))/a(i) ,4);
+        Smax = round( (bounds_max(i)-b(i))/a(i) ,4); 
         Smin = round( (bounds_min(i)-b(i))/a(i) ,4);  
 
         if isinf(Smax) || isnan(Smax)
@@ -364,4 +363,3 @@ function [task_scaling_factor, most_critical_joint] = getTaskScalingFactor(n, a,
     else
         task_scaling_factor = s_max; %min([s_max,1]);
     end
-end

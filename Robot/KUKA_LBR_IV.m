@@ -1,7 +1,7 @@
 classdef KUKA_LBR_IV
     properties
         % robot model from Robotics System Toolbox
-        robot 
+        robot
 
         % number of degrees of freedom of robot
         ndof
@@ -38,8 +38,7 @@ classdef KUKA_LBR_IV
         function self = KUKA_LBR_IV(q_0, q_dot_0, q_ddot_0)
 
             % import robot from robotics system toolbox
-            self.robot = importrobot('iiwa7.urdf'); 
-            self.robot.DataFormat = 'row';
+            self.robot = NaN;
             self.ndof = 7;
 
             % define symbolic variables
@@ -57,7 +56,7 @@ classdef KUKA_LBR_IV
             q_ddot_1=q_ddot_1(t); q_ddot_2=q_ddot_2(t); q_ddot_3=q_ddot_3(t); q_ddot_4=q_ddot_4(t); q_ddot_5=q_ddot_5(t); q_ddot_6=q_ddot_6(t); q_ddot_7=q_ddot_7(t);
             self.q_ddot = [q_ddot_1;q_ddot_2;q_ddot_3;q_ddot_4;q_ddot_5;q_ddot_6;q_ddot_7];
 
-            % define DH matrix
+            % define DH matrix alpha, d, a, theta
             DH_matrix = [[ pi/2 0     0 q_1];
                          [-pi/2 0     0 q_2];
                          [-pi/2 0.400 0 q_3];
@@ -95,7 +94,7 @@ classdef KUKA_LBR_IV
             bounds_min_position = -bounds_max_position;
             self.bounds_position = double([bounds_min_position;bounds_max_position]);
             
-            bounds_max_velocity = round([deg2rad(100), deg2rad(110), deg2rad(100), deg2rad(130), deg2rad(130), deg2rad(180), deg2rad(180)],4);
+            bounds_max_velocity = [deg2rad(100), deg2rad(110), deg2rad(100), deg2rad(130), deg2rad(130), deg2rad(180), deg2rad(180)];
             bounds_min_velocity = -bounds_max_velocity;
             self.bounds_velocity = double([bounds_min_velocity;bounds_max_velocity]);
             

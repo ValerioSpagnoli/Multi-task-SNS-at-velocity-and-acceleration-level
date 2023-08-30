@@ -52,12 +52,12 @@ classdef KUKA_LBR_IIWA7
 
             % define DH matrix
             DH_matrix = [[-pi/2 0.340 0 q_1];
-                        [ pi/2  0     0 q_2];
-                        [ pi/2  0.400 0 q_3];
-                        [-pi/2  0     0 q_4];
-                        [-pi/2  0.400 0 q_5];
-                        [ pi/2  0     0 q_6];
-                        [    0  0.126 0 q_7];];
+                         [ pi/2 0     0 q_2];
+                         [ pi/2 0.400 0 q_3];
+                         [-pi/2 0     0 q_4];
+                         [-pi/2 0.400 0 q_5];
+                         [ pi/2 0     0 q_6];
+                         [    0 0.126 0 q_7];];
 
             % symbolic end effector position: ee_position
             T = {1,self.ndof};
@@ -82,7 +82,7 @@ classdef KUKA_LBR_IIWA7
 
             % symbolic derivate of robot jacobian: J_dot
             self.J_dot = subs(simplify(diff(self.J, t)), {diff(q_1), diff(q_2), diff(q_3), diff(q_4), diff(q_5), diff(q_6), diff(q_7)}, {str2sym('q_dot_1(t)'), str2sym('q_dot_2(t)'),str2sym('q_dot_3(t)'),str2sym('q_dot_4(t)'),str2sym('q_dot_5(t)'),str2sym('q_dot_6(t)'),str2sym('q_dot_7(t)')});
-            
+
             % define bounds
             bounds_max_position = [deg2rad(170), deg2rad(120), deg2rad(170), deg2rad(120), deg2rad(170), deg2rad(120), deg2rad(175)];
             bounds_min_position = -bounds_max_position;

@@ -30,10 +30,10 @@ classdef Simulation
             if isnan(robot_name)
                 self.robot_name = 'KUKA_LBR_IIWA_7_R800';
             else
-                self.robot_name = robot_name;
+                self.robot_name = robot;
             end
             if isnan(q_0)
-                self.q_0 = [0; pi/4; pi/4; pi/4; 0; 0; 0];
+                self.q_0 = [0; pi/4; -pi/4; pi/4; 0; 0; 0];
             else
                 self.q_0 = q_0;
             end
@@ -68,17 +68,14 @@ classdef Simulation
             fprintf('Start simulation ... \n\n')
             pause(2);
             if strcmp(level, 'velocity')
-                [self.joint_positions, self.directional_error] = self.run_simulation_velocity_level();
-            elseif strcmp(level, 'acceleration')
-                [self.joint_positions, self.directional_error] = self.run_simulation_acceleration_level();
-            end
+            [self.joint_positions, self.directional_error] = self.run_simulation_acceleration_level();
             fprintf('Simulation ended. \n')
         end
 
         %% create path
         function path = create_path(self, n_cycle)
             poly_0 = [[0; 0; 0.2], [0; 0.1732; 0.1], [0; 0.1732; -0.1], [0; 0; -0.2], [0; -0.1732; -0.1], [0; -0.1732; 0.1]];
-            center = [0.1; 0.35; 0.6235];
+            center = [0.1; 0.35; 0.8235];
             
             points = [];
             for n=1:n_cycle
@@ -89,12 +86,12 @@ classdef Simulation
             path = [points, poly_0(:,1)]+center;
         end
 
-        %% run simulation velocity level
-        function [qs, eds] = run_simulation_velocity_level(self)
+        %% run simulation
+        function qs = run_simulation_velocity_level(self)
 
             ndof = self.robot.ndof;
             bounds = {self.robot.bounds_position, self.robot.bounds_velocity, self.robot.bounds_acceleration};
-                            
+
             T = self.simulation_step;
             kp = 10;
             kd = 0.1;
@@ -115,7 +112,6 @@ classdef Simulation
             
             % all configurations during task
             qs = [q_h];
-            eds = [];
         
             k = 1;
             while k<=size(self.path,2)
@@ -135,18 +131,8 @@ classdef Simulation
                 m1 = length(x_d);
 
                 % % SNS solution
-                q_dot_new = SNS_velocity_multitask(ndof, {m1}, {J1_h}, {x_dot_d_h}, bounds, q_h, T, false);
+                q_dot_new = SNS_velocity_multitask({m1}, ndof, {J1_h}, {x_dot_d_h}, bounds, q_h, T, false);
                 q_new = q_h + q_dot_new*T;
-
-                bounds_min_velocity = bounds{2}(1,:);
-                bounds_max_velocity = bounds{2}(2,:);
-                for i=1:ndof
-                    if round(q_dot_new(i),4)>round(bounds_max_velocity(i),4)
-                        fprintf('Joint %d out of max velocity bounds: q_dot(%d) = %f, bounds_max_velocity(%d) = %f\n',i, i, q_dot_new(i), i, bounds_max_velocity(i));
-                    elseif round(q_dot_new(i),4)<round(bounds_min_velocity(i),4)
-                        fprintf('Joint %d out of min velocity bounds: q_dot(%d) = %f, bounds_min_velocity(%d) = %f\n',i, i, q_dot_new(i), i, bounds_min_velocity(i));
-                    end
-                end
         
                 % set previous configuration to current configuration ...
                 q_hm1 = q_h;
@@ -158,18 +144,14 @@ classdef Simulation
                 q_dot_h = q_dot_new;
                 J1_h = self.robot.get_J(q_h);
                 ee_position_h = self.robot.get_ee_position(q_h);
-
-                % Directional error
-                e_d = acos(dot(((x_d-ee_position_h)/norm(x_d-ee_position_h)), ((J1_h*q_dot_h)/norm(J1_h*q_dot_h))));
         
                 % save new configuration
                 qs = [qs, q_h];
-                eds = [eds, e_d];
 
             end
         end
 
-        %% run simulation acceleration level
+        %% run simulation
         function [qs, eds] = run_simulation_acceleration_level(self)
 
             ndof = self.robot.ndof;
@@ -262,6 +244,7 @@ classdef Simulation
                 % q_new = q_h + q_dot_h*T + 0.5*q_ddot_new*T^2;
 
                 
+
                 % hard bounds
                 limit_exceeded_acc = false;
                 limit_exceeded_vel = false;
@@ -336,6 +319,7 @@ classdef Simulation
                 ee_position_h = self.robot.get_ee_position(q_h);
 
                 % Directional error
+
                 e_d = acos(((x_d-ee_position_h)/norm(x_d-ee_position_h)) .* ((J1_h*q_dot_h)/norm(J1_h*q_dot_h)));
         
                 % save new configuration

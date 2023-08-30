@@ -10,8 +10,6 @@ classdef MATLAB_simulation
 
     methods
         function self = MATLAB_simulation(robot, joint_positions, directional_error, simulation_step, points)
-            
-            clear figure;
 
             self.robot = robot;
             if strcmp(robot.name, 'KUKA_LBR_IIWA_7_R800')
@@ -28,30 +26,23 @@ classdef MATLAB_simulation
             self.T = simulation_step;
             self.points = points;
             
-            if ~isnan(joint_positions)
-                self.run_3D_simulation();
-            else
-                disp('Cannot run 3D simulation because joint position is NaN.')
-                return;
-            end
-            
-            if ~isnan(directional_error)
-                self.plot_directional_error();
-            else
-                disp('Cannot plot directional error because is NaN.')
-                return;
-            end
-    
+            self.main();
         end
 
         %% main function
-        function run_3D_simulation(self)
+        function main(self)
             robot_arm = self.robot_model;
             ndof = self.robot.ndof;
             
             bounds_min_position = self.robot.bounds_position(1,:);
             bounds_max_position = self.robot.bounds_position(2,:);
-                
+        
+            bounds_min_velocity = self.robot.bounds_velocity(1,:);
+            bounds_max_velocity = self.robot.bounds_velocity(2,:);
+        
+            bounds_min_acceleration = self.robot.bounds_acceleration(1,:);
+            bounds_max_acceleration = self.robot.bounds_acceleration(2,:);
+        
             framerate = 15;
             r = rateControl(framerate);
             t_init = 1*self.T;
@@ -104,21 +95,5 @@ classdef MATLAB_simulation
             end
             hold off
         end
-
-        %% Plot directional error
-        function plot_directional_error(self)
-            t_init = 0.001;
-            t_final = length(self.directional_error)/1000;
-            time = [0,linspace(t_init,t_final,size(self.directional_error,2)-1)];
-
-            plot(time, self.directional_error);
-            grid on
-            hold on
-            title('Directional error');
-            xlabel('Time [s]');
-            ylabel('Directional error [rad]');
-        end
-
-
     end
 end
