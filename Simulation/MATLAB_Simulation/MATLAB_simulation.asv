@@ -10,6 +10,8 @@ classdef MATLAB_simulation
 
     methods
         function self = MATLAB_simulation(robot, joint_positions, directional_error, simulation_step, points)
+            
+            clear figure;
 
             self.robot = robot;
             if strcmp(robot.name, 'KUKA_LBR_IIWA_7_R800')
@@ -26,23 +28,30 @@ classdef MATLAB_simulation
             self.T = simulation_step;
             self.points = points;
             
-            self.main();
+            if ~isnan(joint_positions)
+                self.run_3D_simulation();
+            else
+                disp('Cannot run 3D simulation because joint position is NaN.')
+                return;
+            end
+            
+            if ~isnan(directional_error)
+                self.plot_directional_error();
+            else
+                disp('Cannot plot directional error because is NaN.')
+                return;
+            end
+    
         end
 
         %% main function
-        function main(self)
+        function run_3D_simulation(self)
             robot_arm = self.robot_model;
             ndof = self.robot.ndof;
             
             bounds_min_position = self.robot.bounds_position(1,:);
             bounds_max_position = self.robot.bounds_position(2,:);
-        
-            bounds_min_velocity = self.robot.bounds_velocity(1,:);
-            bounds_max_velocity = self.robot.bounds_velocity(2,:);
-        
-            bounds_min_acceleration = self.robot.bounds_acceleration(1,:);
-            bounds_max_acceleration = self.robot.bounds_acceleration(2,:);
-        
+                
             framerate = 15;
             r = rateControl(framerate);
             t_init = 1*self.T;
@@ -59,8 +68,8 @@ classdef MATLAB_simulation
             
 
             figure;
-            show(robot_arm, self.joint_positions(:,1)', 'PreservePlot', false);
-            hold on
+            % show(robot_arm, self.joint_positions(:,1)', 'PreservePlot', false);
+            % hold on
         
             points_x = zeros(1, length(self.points));
             points_y = zeros(1, length(self.points));
@@ -70,16 +79,19 @@ classdef MATLAB_simulation
                 points_y(i) = self.points(2,i);
                 points_z(i) = self.points(3,i);
             end
-            plot3(points_x, points_y, points_z, '-square', 'Color', 'r')
+
+            figure;
+            p1 = plot3(points_x, points_y, points_z, '-square', 'Color', 'r');
+            grid on
             hold on
         
             pause(5);
             
-            p = plot3(gripperPosition(1,1), gripperPosition(1,2), gripperPosition(1,3), 'Color', 'black');
+            p2 = plot3(gripperPosition(1,1), gripperPosition(1,2), gripperPosition(1,3), 'Color', 'black');
             hold on
         
             for k = 1:size(qInterp,1)
-                show(robot_arm, qInterp(k,:), 'PreservePlot', false);
+                %show(robot_arm, qInterp(k,:), 'PreservePlot', false);
                 q_k = qInterp(k,:);
                 for i=1:ndof
                     if q_k(i) > bounds_max_position(i)
@@ -88,12 +100,29 @@ classdef MATLAB_simulation
                         fprintf('Joint %d under bounds_min_position: q_k(%d) = %f, bounds_min_position(%d) = %f\n', i, i, q_k(i), i, bounds_min_position(i));
                     end
                 end
-                p.XData(k) = gripperPosition(k,1);
-                p.YData(k) = gripperPosition(k,2);
-                p.ZData(k) = gripperPosition(k,3);
+                p2.XData(k) = gripperPosition(k,1);
+                p2.YData(k) = gripperPosition(k,2);
+                p2.ZData(k) = gripperPosition(k,3);
                 waitfor(r);
             end
             hold off
         end
+
+        %% Plot directional error
+        function plot_directional_error(self)
+            t_init = 0.001;
+            t_final = length(self.directional_error)/1000;
+            time = [0,linspace(t_init,t_final,size(self.directional_error,2)-1)];
+
+            figure;
+            plot(time, self.directional_error);
+            grid on
+            hold on
+            title('Directional error');
+            xlabel('Time [s]');
+            ylabel('Directional error [rad]');
+        end
+
+
     end
 end

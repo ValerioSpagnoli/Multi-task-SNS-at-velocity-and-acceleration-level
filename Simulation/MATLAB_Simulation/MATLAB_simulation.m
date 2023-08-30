@@ -15,14 +15,13 @@ classdef MATLAB_simulation
 
             self.robot = robot;
             if strcmp(robot.name, 'KUKA_LBR_IIWA_7_R800')
-                robot_file = 'iiwa7.urdf';
+                self.robot_model = importrobot('iiwa7.urdf'); 
+                self.robot_model.DataFormat = 'row';
             elseif strcmp(robot.name, 'KUKA_LBR_IV')
-                disp('Error: KUKA LBR IV does not exist in Matlab System Toolbox');
-                return
+                disp('KUKA LBR IV does not exist in Matlab System Toolbox. The simuluation will be done showing the end effector position only.');
+                self.robot_model = NaN;
             end
 
-            self.robot_model = importrobot(robot_file); 
-            self.robot_model.DataFormat = 'row';
             self.joint_positions = joint_positions; 
             self.directional_error = directional_error;
             self.T = simulation_step;
@@ -68,8 +67,10 @@ classdef MATLAB_simulation
             
 
             figure;
-            show(robot_arm, self.joint_positions(:,1)', 'PreservePlot', false);
-            hold on
+            if isobject(robot_arm)
+                show(robot_arm, self.joint_positions(:,1)', 'PreservePlot', false);
+                hold on
+            end
         
             points_x = zeros(1, length(self.points));
             points_y = zeros(1, length(self.points));
@@ -79,16 +80,21 @@ classdef MATLAB_simulation
                 points_y(i) = self.points(2,i);
                 points_z(i) = self.points(3,i);
             end
-            plot3(points_x, points_y, points_z, '-square', 'Color', 'r')
-            hold on
         
-            pause(5);
-            
+            plot3(points_x, points_y, points_z, '-square', 'Color', 'r');
+            hold on
+            grid on
             p = plot3(gripperPosition(1,1), gripperPosition(1,2), gripperPosition(1,3), 'Color', 'black');
             hold on
-        
+            grid on
+            
+            pause(1);
+            
             for k = 1:size(qInterp,1)
-                show(robot_arm, qInterp(k,:), 'PreservePlot', false);
+                if isobject(robot_arm)
+                    show(robot_arm, qInterp(k,:), 'PreservePlot', false);
+                end
+
                 q_k = qInterp(k,:);
                 for i=1:ndof
                     if q_k(i) > bounds_max_position(i)
@@ -97,9 +103,11 @@ classdef MATLAB_simulation
                         fprintf('Joint %d under bounds_min_position: q_k(%d) = %f, bounds_min_position(%d) = %f\n', i, i, q_k(i), i, bounds_min_position(i));
                     end
                 end
+
                 p.XData(k) = gripperPosition(k,1);
                 p.YData(k) = gripperPosition(k,2);
                 p.ZData(k) = gripperPosition(k,3);
+
                 waitfor(r);
             end
             hold off
@@ -111,6 +119,7 @@ classdef MATLAB_simulation
             t_final = length(self.directional_error)/1000;
             time = [0,linspace(t_init,t_final,size(self.directional_error,2)-1)];
 
+            figure;
             plot(time, self.directional_error);
             grid on
             hold on

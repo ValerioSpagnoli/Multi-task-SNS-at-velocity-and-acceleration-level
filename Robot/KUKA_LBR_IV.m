@@ -1,7 +1,5 @@
 classdef KUKA_LBR_IV
     properties
-        % robot model from Robotics System Toolbox
-        robot
 
         % number of degrees of freedom of robot
         ndof
@@ -37,8 +35,6 @@ classdef KUKA_LBR_IV
         %% constructur
         function self = KUKA_LBR_IV(q_0, q_dot_0, q_ddot_0)
 
-            % import robot from robotics system toolbox
-            self.robot = NaN;
             self.ndof = 7;
 
             % define symbolic variables
@@ -73,10 +69,10 @@ classdef KUKA_LBR_IV
                 a_i = DH_matrix(i,3);
                 theta_i = DH_matrix(i,4);
                 
-                T_i = [[cos(theta_i) -sin(theta_i)*cos(alpha_i)  sin(theta_i)*sin(alpha_i)  a_i*cos(theta_i)];
-                      [sin(theta_i)  cos(theta_i)*cos(alpha_i)  -cos(theta_i)*sin(alpha_i)  a_i*sin(theta_i)];
-                      [           0               sin(alpha_i)                cos(alpha_i)               d_i];
-                      [           0                          0                          0                  1];];
+                T_i = [[cos(theta_i) -sin(theta_i)*cos(alpha_i)   sin(theta_i)*sin(alpha_i)  a_i*cos(theta_i)];
+                       [sin(theta_i)  cos(theta_i)*cos(alpha_i)  -cos(theta_i)*sin(alpha_i)  a_i*sin(theta_i)];
+                       [           0               sin(alpha_i)                cos(alpha_i)               d_i];
+                       [           0                          0                          0                  1];];
             
                 T{i} = T_i;
             end

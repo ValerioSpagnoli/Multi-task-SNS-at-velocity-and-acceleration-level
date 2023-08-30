@@ -22,6 +22,7 @@ classdef Simulation
         % simulation_step: time step of simulation
         function self = Simulation(level, robot_name, q_0, q_dot_0, q_ddot_0, simulation_step)
 
+            % check parameters
             if isnan(level)
                 self.level = 'velocity';
             else
@@ -33,7 +34,11 @@ classdef Simulation
                 self.robot_name = robot_name;
             end
             if isnan(q_0)
-                self.q_0 = [0; pi/4; pi/4; pi/4; 0; 0; 0];
+                if strcmp(self.robot_name, 'KUKA_LBR_IIWA_7_R800')
+                    self.q_0 = [0; pi/4; -pi/4; pi/4; 0; 0; 0];
+                elseif strcmp(self.robot_name, 'KUKA_LBR_IV')
+                    self.q_0 = [0; pi/4; pi/4; pi/4; 0; 0; 0];
+                end
             else
                 self.q_0 = q_0;
             end
@@ -53,6 +58,7 @@ classdef Simulation
                 self.simulation_step = simulation_step;
             end
                      
+            % load robot
             fprintf('Loading robot ... ');
             if strcmp(self.robot_name, 'KUKA_LBR_IIWA_7_R800')
                 self.robot = KUKA_LBR_IIWA7(self.q_0, self.q_dot_0, self.q_ddot_0);
@@ -61,10 +67,12 @@ classdef Simulation
             end
             fprintf('done! \n');
             
+            % compute path
             fprintf('Creating path ... ')
             self.path = self.create_path(1);
             fprintf('done! \n');
             
+            % compute simulation
             fprintf('Start simulation ... \n\n')
             pause(2);
             if strcmp(level, 'velocity')
@@ -78,8 +86,13 @@ classdef Simulation
         %% create path
         function path = create_path(self, n_cycle)
             poly_0 = [[0; 0; 0.2], [0; 0.1732; 0.1], [0; 0.1732; -0.1], [0; 0; -0.2], [0; -0.1732; -0.1], [0; -0.1732; 0.1]];
-            center = [0.1; 0.35; 0.6235];
             
+            if strcmp(self.robot_name, 'KUKA_LBR_IIWA_7_R800')
+                center = [0.1; 0.35; 0.8235];
+            elseif strcmp(self.robot_name, 'KUKA_LBR_IV')
+                center = [0.1; 0.35; 0.6235];
+            end
+                        
             points = [];
             for n=1:n_cycle
                 for i=1:6
@@ -87,6 +100,7 @@ classdef Simulation
                 end
             end
             path = [points, poly_0(:,1)]+center;
+            path = [[0.1; 0.3; 0.5], [0.1; 0.5; 0.7]];
         end
 
         %% run simulation velocity level
