@@ -1,8 +1,8 @@
 function q_ddot_SNS = SNS_acceleration_multitask_full(n, m, J, J_dot, task_d, bounds, q, q_dot, T, verbose)
 
-    % [bounds_Q_ddot_min, bounds_Q_ddot_max] = shaping_acceleration_bounds(n, bounds, q, q_dot, T);
-    bounds_Q_ddot_min = bounds{3}(1,:);
-    bounds_Q_ddot_max = bounds{3}(2,:);
+    [bounds_Q_ddot_min, bounds_Q_ddot_max] = shaping_acceleration_bounds(n, bounds, q, q_dot, T);
+    %bounds_Q_ddot_min = bounds{3}(1,:);
+    %bounds_Q_ddot_max = bounds{3}(2,:);
 
     l = length(m);
 
@@ -40,7 +40,22 @@ function q_ddot_SNS = SNS_acceleration_multitask_full(n, m, J, J_dot, task_d, bo
 
         q_ddot_bar{length(q_ddot_bar)+1} = q_ddot_bar_k;
 
-        P_k = round( P_km1 - pinv(J_k*P_km1) * (J_k*P_km1) ,4);
+
+        pinv_Jk_x_Pkm1 = round( pinv(J_k*P_km1) ,4);
+        for j = 1:n
+            if P_km1(j,j) == 0
+                pinv_Jk_x_Pkm1(j,:) = 0;
+            end
+        end
+
+        fprintf('P_km1 = \n');disp(P_km1);
+        fprintf('pinv_Jk_x_Pkm1 = \n');disp(pinv_Jk_x_Pkm1);
+        fprintf('J_k*P_km1 = \n');disp(J_k*P_km1);
+
+        P_k = round( P_km1 - pinv_Jk_x_Pkm1 * (J_k*P_km1) ,4);
+
+        fprintf('P_k = \n');disp(P_k);
+
         P{length(P)+1} = P_k;
 
         if ret

@@ -19,7 +19,8 @@ classdef MATLAB_simulation
                 self.robot_model.DataFormat = 'row';
             elseif strcmp(robot.name, 'KUKA_LBR_IV')
                 disp('KUKA LBR IV does not exist in Matlab System Toolbox. The simuluation will be done showing the end effector position only.');
-                self.robot_model = NaN;
+                self.robot_model = importrobot('iiwa7.urdf');
+                self.robot_model.DataFormat = 'row';
             end
 
             self.joint_positions = joint_positions; 

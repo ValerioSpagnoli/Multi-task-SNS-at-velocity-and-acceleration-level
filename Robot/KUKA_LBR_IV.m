@@ -53,9 +53,9 @@ classdef KUKA_LBR_IV
             self.q_ddot = [q_ddot_1;q_ddot_2;q_ddot_3;q_ddot_4;q_ddot_5;q_ddot_6;q_ddot_7];
 
             % define DH matrix alpha, d, a, theta
-            DH_matrix = [[ pi/2 0.3105 0 q_1];
+            DH_matrix = [[-pi/2 0.3105 0 q_1];
                          [-pi/2 0      0 q_2];
-                         [-pi/2 0.4000 0 q_3];
+                         [ pi/2 0.4000 0 q_3];
                          [ pi/2 0      0 q_4];
                          [ pi/2 0.3900 0 q_5];
                          [-pi/2 0      0 q_6];

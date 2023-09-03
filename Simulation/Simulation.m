@@ -100,7 +100,6 @@ classdef Simulation
                 end
             end
             path = [points, poly_0(:,1)]+center;
-            path = [[0.1; 0.3; 0.5], [0.1; 0.5; 0.7]];
         end
 
         %% run simulation velocity level
@@ -246,7 +245,7 @@ classdef Simulation
                 V_h = round(kp*norm(x_d - ee_position_h) - kd*norm(J1_hm1*q_dot_hm1),4);
                 x_dot_d_h = round(V_h * ((x_d - ee_position_h) / norm(x_d - ee_position_h)),4);
                 x_ddot_d_h = round( (x_dot_d_h-J1_hm1*q_dot_hm1) / T ,4);
-                
+
                 % A_h = round(kp*norm(x_dot_d_h - J_h*q_dot_h) - kd*norm(J_hm1*q_ddot_hm1+J_dot_hm1*q_dot_hm1),4);
                 % x_ddot_d_h = round(A_h * ((x_dot_d_h - J_h*q_dot_h) / norm(x_dot_d_h - J_h*q_dot_h)),4);
 
@@ -259,13 +258,8 @@ classdef Simulation
                 m2 = length(q_dot_cs);
 
 
-                % Shaping joint bounds
-                [bounds_Q_ddot_min, bounds_Q_ddot_max] = self.shaping_acceleration_bounds(ndof, bounds, q_h, q_dot_h, T);
-                bounds = {[bounds_min_position; bounds_max_position], [bounds_min_velocity; bounds_max_velocity], [bounds_Q_ddot_min; bounds_Q_ddot_max]};
-
-
                 % SNS solution
-                q_ddot_new = SNS_acceleration_multitask_full(ndof, {m1}, {J1_h}, {J1_dot_h}, {x_ddot_d_h}, bounds, q_h, q_dot_h, T, true);
+                q_ddot_new = SNS_acceleration_multitask(ndof, {m1}, {J1_h}, {J1_dot_h}, {x_ddot_d_h}, bounds, q_h, q_dot_h, T, false);
                 q_dot_new = q_dot_h + q_ddot_new*T;
                 q_new = q_h + q_dot_h*T + 0.5*q_ddot_new*T^2;
 
@@ -289,18 +283,18 @@ classdef Simulation
                     end
                     
                     if round(q_dot_new(i),4)>round(bounds_max_velocity(i),4)
-                        %q_dot_new(i) = round(bounds_max_velocity(i),4);
+                        q_dot_new(i) = round(bounds_max_velocity(i),4);
                         limit_exceeded_vel=true;
                     elseif round(q_dot_new(i),4)<round(bounds_min_velocity(i),4)
-                        %q_dot_new(i) = round(bounds_min_velocity(i),4);
+                        q_dot_new(i) = round(bounds_min_velocity(i),4);
                         limit_exceeded_vel=true;
                     end
                     
                     if round(q_new(i),4)>round(bounds_max_position(i),4)
-                        %q_new(i) = round(bounds_max_position(i),4);
+                        q_new(i) = round(bounds_max_position(i),4);
                         limit_exceeded_pos=true;
                     elseif round(q_new(i),4)<round(bounds_min_position(i),4)
-                        %q_new(i) = round(bounds_min_position(i),4);
+                        q_new(i) = round(bounds_min_position(i),4);
                         limit_exceeded_pos=true;
                     end
                 end
@@ -310,18 +304,13 @@ classdef Simulation
                 fprintf('k = %d, norm(ee_position_h - x_d) = %f\n\n', k, norm(ee_position_h-x_d));
 
                 fprintf('ee_position_h = ');disp(ee_position_h');
-                fprintf('q_dot_hm1 = ');disp(q_dot_hm1');
-                fprintf('J_hm1 = \n');disp(J1_hm1);
-                fprintf('J_hm1*q_dot_hm1 = ');disp(round(J1_hm1*q_dot_hm1,4)');
-
-                fprintf('V_h = ');disp(V_h);
-                fprintf('x_d = ');disp(x_d');
-                fprintf('x_dot_d_h = ');disp(x_dot_d_h');
-                fprintf('x_ddot_d_h = ');disp(x_ddot_d_h');
+                fprintf('x_d           = ');disp(x_d');
+                fprintf('x_dot_d_h     = ');disp(x_dot_d_h');
+                fprintf('x_ddot_d_h    = ');disp(x_ddot_d_h');
                 
-                fprintf('q_ddot_SNS = ');disp(q_ddot_new')
-                fprintf('q_dot_SNS = ');disp(q_dot_new')
-                fprintf('q_SNS = ');disp(q_new')
+                fprintf('q_ddot_new    = ');disp(q_ddot_new')
+                fprintf('q_dot_new     = ');disp(q_dot_new')
+                fprintf('q_new         = ');disp(q_new')
 
                 fprintf('Limit_exceeded_acc = ');disp(limit_exceeded_acc);
                 fprintf('Limit_exceeded_vel = ');disp(limit_exceeded_vel);
@@ -356,53 +345,6 @@ classdef Simulation
                 qs = [qs, q_h];
                 eds = [eds, e_d];
             end
-        end
-
-        %% Shaping joint bounds
-        function [bounds_Q_ddot_min, bounds_Q_ddot_max] = shaping_acceleration_bounds(self, n, bounds, q, q_dot, T)
-
-            bounds_min_position = bounds{1}(1,:);
-            bounds_max_position = bounds{1}(2,:);
-        
-            bounds_min_velocity = bounds{2}(1,:);
-            bounds_max_velocity = bounds{2}(2,:);
-        
-            bounds_min_acceleration = bounds{3}(1,:);
-            bounds_max_acceleration = bounds{3}(2,:);
-        
-            bounds_Q_ddot_min = zeros(1,7);
-            bounds_Q_ddot_max = zeros(1,7);
-        
-            for i=1:n
-        
-                Q_ddot_min_1 = 2*(bounds_min_position(i)-q(i)-q_dot(i)*T)/T^2;
-                Q_ddot_min_2 = -(bounds_max_velocity(i)+q_dot(i))/T;
-                Q_ddot_min_3 = bounds_min_acceleration(i);
-
-                if Q_ddot_min_1 > 0
-                    Q_ddot_min_1 = -Inf;
-                end
-                if Q_ddot_min_2 > 0
-                    Q_ddot_min_2 = -Inf;
-                end
-                
-                bounds_Q_ddot_min(i) = round( max([Q_ddot_min_1, Q_ddot_min_2, Q_ddot_min_3]) ,4);
-        
-                
-                Q_ddot_max_1 = 2*(bounds_max_position(i)-q(i)-q_dot(i)*T)/T^2;
-                Q_ddot_max_2 = (bounds_max_velocity(i)-q_dot(i))/T;
-                Q_ddot_max_3 = bounds_max_acceleration(i);
-
-                if Q_ddot_max_1 < 0
-                    Q_ddot_max_1 = +Inf;
-                end
-                if Q_ddot_max_2 > 0
-                    Q_ddot_max_2 = +Inf;
-                end
-                
-                bounds_Q_ddot_max(i) = round( min([Q_ddot_max_1, Q_ddot_max_2, Q_ddot_max_3]) ,4);   
-
-            end    
         end
     end
 
