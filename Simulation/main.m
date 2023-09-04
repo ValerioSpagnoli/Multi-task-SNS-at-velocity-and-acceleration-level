@@ -1,4 +1,4 @@
-function main()
+function siml = main()
     clear all; clc; close all;
 
     level = 'acceleration';

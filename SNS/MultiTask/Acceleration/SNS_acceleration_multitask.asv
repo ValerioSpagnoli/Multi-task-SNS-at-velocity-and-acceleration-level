@@ -68,9 +68,9 @@ function q_ddot_SNS = SNS_acceleration_multitask(n, m, J, J_dot, x_ddot, bounds,
             if verbose
             fprintf('**********************************************************\n')
             fprintf('while loop %d\n\n', while_loop);   
-                if while_loop>4
-                    break; 
-                end
+            if while_loop>4
+                return 
+            end
             end
 
             limit_exceeded = false;
@@ -200,7 +200,7 @@ function q_ddot_SNS = SNS_acceleration_multitask(n, m, J, J_dot, x_ddot, bounds,
                     fprintf('task_scaling_factor > s_star_k:\n');
                     fprintf('    W_star_k = \n');disp(W_star_k);
                     fprintf('    P_bar_star_k = \n');disp(P_bar_star_k);
-                    fprintf('    s_stark_k = ');disp(s_star_k);
+                    fprintf('    s_stark_k = %f\n', s_star_k);
                     fprintf('    q_dot_star_N_k = ');disp(q_ddot_star_N_k');
                     fprintf('..........................................................\n')
                     end
@@ -223,8 +223,6 @@ function q_ddot_SNS = SNS_acceleration_multitask(n, m, J, J_dot, x_ddot, bounds,
                 fprintf('    W_k = \n');disp(W_k);
                 fprintf('    P_bar_k = \n');disp(P_bar_k);
                 fprintf('    q_ddot_N_k = ');disp(q_ddot_N_k');
-                fprintf('    J_k*P_bar_k = \n');disp(J_k*P_bar_k);
-                fprintf('    rank(J_k*P_bar_k) = ');disp(rank(round(J_k*P_bar_k,4)));
                 fprintf('..........................................................\n')
                 end
 
@@ -232,7 +230,7 @@ function q_ddot_SNS = SNS_acceleration_multitask(n, m, J, J_dot, x_ddot, bounds,
                 % of the current task (m_k), scale the remanining
                 % components out of bounds using the best scaling factor
                 % found so far
-                if rank(round(J_k*P_bar_k,4)) < m_k
+                if rank(J_k*P_bar_k) < m_k
                     W_k = W_star_k;
                     P_bar_k = P_bar_star_k;
                     q_ddot_N_k = q_ddot_star_N_k;
