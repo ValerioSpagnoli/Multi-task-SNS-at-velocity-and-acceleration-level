@@ -8,6 +8,7 @@ classdef Simulation
         q_ddot_0
         simulation_step
         path
+        epsilon
         joint_positions
         directional_error
     end
@@ -20,7 +21,7 @@ classdef Simulation
         % q_dot_0: [7x1] vector [rad/s]
         % q_ddot_0: [7x1] vector [rad/s^2]
         % simulation_step: time step of simulation
-        function self = Simulation(level, robot_name, q_0, q_dot_0, q_ddot_0, simulation_step)
+        function self = Simulation(level, robot_name, q_0, q_dot_0, q_ddot_0, simulation_step, epsilon)
 
             % check parameters
             if isnan(level)
@@ -57,6 +58,11 @@ classdef Simulation
             else
                 self.simulation_step = simulation_step;
             end
+            if isnan(epsilon)
+                self.epsilon = 0.001;
+            else
+                self.epsilon = epsilon;
+            end
                      
             % load robot
             fprintf('Loading robot ... ');
@@ -74,7 +80,7 @@ classdef Simulation
             
             % compute simulation
             fprintf('Start simulation ... \n\n')
-            pause(2);
+            pause(1);
             if strcmp(level, 'velocity')
                 [self.joint_positions, self.directional_error] = self.run_simulation_velocity_level();
             elseif strcmp(level, 'acceleration')
@@ -236,17 +242,19 @@ classdef Simulation
             while k<=size(self.path,2)
                 
                 x_d = round(self.path(1:3,k),4);
-                    
-                if norm(ee_position_h - x_d) < 0.01
-                    k = k+1;
-                    x_d = self.path(k); 
-                end
+                   
+                if k==1
+                    pi = self.robot.ee_position_0;
+                    pf = x_d;
+                else
+                    pi = self.path(1:3,k-1); 
+                    pf = x_d;
+                end                  
                 
-
                 % TASK 1: path following, paper formulation
                 V_h = round(kp*norm(x_d - ee_position_h) - kd*norm(J1_hm1*q_dot_hm1),4);
                 x_dot_d_h = round(V_h * ((x_d - ee_position_h) / norm(x_d - ee_position_h)),4);
-                x_ddot_d_h = round( (x_dot_d_h-J1_hm1*q_dot_hm1) / T ,4);
+                x_ddot_d_h =  round( (x_dot_d_h-J1_hm1*q_dot_hm1) / T ,4);
 
                 m1 = length(x_ddot_d_h);
                  
@@ -297,6 +305,7 @@ classdef Simulation
 
                 fprintf('k = %d, norm(ee_position_h - x_d) = %f\n\n', k, norm(ee_position_h-x_d));
 
+                fprintf('v             = ');disp(v');
                 fprintf('ee_position_h = ');disp(ee_position_h');
                 fprintf('x_d           = ');disp(x_d');
                 fprintf('x_dot_d_h     = ');disp(x_dot_d_h');
@@ -332,10 +341,13 @@ classdef Simulation
                 J1_dot_h = self.robot.get_J_dot(q_h, q_dot_h);
                 ee_position_h = self.robot.get_ee_position(q_h);
 
+                if norm(ee_position_h - x_d) < self.epsilon
+                    k = k+1;
+                end
+
                 % Directional error
                 e_d = acos(dot(((x_d-ee_position_h)/norm(x_d-ee_position_h)), ((J1_h*q_dot_h)/norm(J1_h*q_dot_h))));
 
-        
                 % save new configuration
                 qs = [qs, q_h];
                 eds = [eds, e_d];
