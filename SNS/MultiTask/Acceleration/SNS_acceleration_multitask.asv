@@ -68,7 +68,7 @@ function q_ddot_SNS = SNS_acceleration_multitask(n, m, J, J_dot, x_ddot, bounds,
             if verbose
             fprintf('**********************************************************\n')
             fprintf('while loop %d\n\n', while_loop);   
-                if while_loop>n-m_k
+                if while_loop>4
                     break; 
                 end
             end
@@ -193,7 +193,7 @@ function q_ddot_SNS = SNS_acceleration_multitask(n, m, J, J_dot, x_ddot, bounds,
                     q_ddot_N_k(j) = round( bounds_Q_ddot_min(j)-q_ddot_bar_km1(j) ,4);
                 end
                 
-                P_bar_k = round( (eye(n) - pinv((eye(n)-W_k)*P_km1))*P_km1 ,4);
+                P_bar_k = (eye(n) - pinv((eye(n)-W_k)*P_km1))*P_km1;
 
                 if verbose
                 fprintf('..........................................................\n')
@@ -216,16 +216,16 @@ function q_ddot_SNS = SNS_acceleration_multitask(n, m, J, J_dot, x_ddot, bounds,
                     q_ddot_N_k = q_ddot_star_N_k;
                     s_k = s_star_k;
 
-                    q_ddot_bar_N_k = round( pinv((eye(n)-W_k)*P_km1)*q_ddot_N_k ,4);
-                    q_ddot_tilde_k = round( q_ddot_bar_km1 + q_ddot_bar_N_k ,4);
+                    q_ddot_bar_N_k = pinv((eye(n)-W_k)*P_km1)*q_ddot_N_k;
+                    q_ddot_tilde_k = q_ddot_bar_km1 + q_ddot_bar_N_k;
                     
-                    pinv_Jk_x_Pbark = round( pinv(J_k*P_bar_k) ,4);
+                    pinv_Jk_x_Pbark = pinv(J_k*P_bar_k);
                     for j = 1:n
                         if P_bar_k(j,j) == 0
                             pinv_Jk_x_Pbark(j,:) = 0;
                         end
                     end
-                    q_ddot_bar_k = round( q_ddot_tilde_k + pinv_Jk_x_Pbark*(s_k*x_ddot_k - J_dot_k*q_dot - J_k*q_ddot_tilde_k) ,4);
+                    q_ddot_bar_k = q_ddot_tilde_k + pinv_Jk_x_Pbark*(s_k*x_ddot_k - J_dot_k*q_dot - J_k*q_ddot_tilde_k);
 
                     limit_exceeded = false;   
 
@@ -256,7 +256,7 @@ function q_ddot_SNS = SNS_acceleration_multitask(n, m, J, J_dot, x_ddot, bounds,
         
         q_ddot_bar{length(q_ddot_bar)+1} = q_ddot_bar_k;
 
-        P_k = round( P_km1 - pinv(J_k*P_km1) * (J_k*P_km1) ,4);
+        P_k = P_km1 - pinv(J_k*P_km1) * (J_k*P_km1);
         P{length(P)+1} = P_k;
         
     end
@@ -272,8 +272,8 @@ function [task_scaling_factor, most_critical_joint] = getTaskScalingFactor(n, a,
     
     for i=1:n
 
-        Smin = round( (bounds_min(i)-b(i))/a(i) ,4);
-        Smax = round( (bounds_max(i)-b(i))/a(i) ,4);   
+        Smin = (bounds_min(i)-b(i))/a(i);
+        Smax = (bounds_max(i)-b(i))/a(i);   
 
         if isinf(Smax) || isnan(Smax)
             Smax = +Inf;

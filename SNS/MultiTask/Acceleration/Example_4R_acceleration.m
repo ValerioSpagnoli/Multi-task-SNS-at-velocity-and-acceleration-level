@@ -61,7 +61,7 @@ J_2 = double(subs(J_2_sym, q, q_0));
 J_dot_1 = double(subs(J_dot_1_sym, [q, q_dot], [q_0, q_dot_0]));
 J_dot_2 = double(subs(J_dot_2_sym, [q, q_dot], [q_0, q_dot_0]));
 
-x_ddot_1 = [-3; -1.5];
+x_ddot_1 = [-3; -1.5]*10e3;
 x_ddot_2 = [1];
 
 %% Pseudoinversion solution (minimum norm solution)
@@ -71,5 +71,5 @@ fprintf('Pseudoinversion solution (minimum norm solution): q_dot_MNS = ');disp(q
 
 %% Apply SNS multitask algorithm
 
-q_ddot_SNS = SNS_acceleration_multitask(n, {length(x_ddot_1),length(x_ddot_2)}, {J_1, J_2}, {J_dot_1, J_dot_2}, {x_ddot_1, x_ddot_2}, bounds, q_0, q_dot_0, simulation_step, false);
+q_ddot_SNS = SNS_acceleration_multitask(n, {length(x_ddot_1),length(x_ddot_2)}, {J_1, J_2}, {J_dot_1, J_dot_2}, {x_ddot_1, x_ddot_2}, bounds, q_0, q_dot_0, simulation_step, true);
 fprintf('Saturation in Null Space solution:                q_ddot_SNS = ');disp(round(q_ddot_SNS', 3));

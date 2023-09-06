@@ -6,7 +6,7 @@ classdef MATLAB_simulation
         directional_error
         x_dot_d
         x_ddot_d
-        versors
+        versor
         T 
         points
     end
@@ -31,7 +31,7 @@ classdef MATLAB_simulation
             self.directional_error = sim.directional_error;
             self.x_dot_d = sim.x_dot_d;
             self.x_ddot_d = sim.x_ddot_d;
-            self.versors = sim.versors;
+            self.versor = sim.versor;
             self.T = sim.simulation_step;
             self.points = sim.path;
             
@@ -125,11 +125,8 @@ classdef MATLAB_simulation
             plot3(points_x, points_y, points_z, '-square', 'Color', 'r');
             hold on
             grid on
-            for i=1:size(self.versors,2)
-                v = self.versors{i};
-                pi = v(:,1);
-                pf = v(:,2); 
-                quiver3(pi(1), pi(2), pi(3), pf(1), pf(2), pf(3));
+            for i=1:size(self.versor,2)
+                quiver3(points_x(i), points_y(i), points_z(i), self.versor(1, i), self.versor(2, i), self.versor(3, i));
             end
 
 
