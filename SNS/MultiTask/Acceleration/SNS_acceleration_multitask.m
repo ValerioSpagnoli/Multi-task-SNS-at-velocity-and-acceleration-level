@@ -65,12 +65,14 @@ function q_ddot_SNS = SNS_acceleration_multitask(n, m, J, J_dot, x_ddot, bounds,
         limit_exceeded = true;
         while limit_exceeded
 
+            if while_loop>n-m_k
+                break; 
+            end
+
             if verbose
             fprintf('**********************************************************\n')
             fprintf('while loop %d\n\n', while_loop);   
-                if while_loop>n-m_k
-                    break; 
-                end
+
             end
 
             limit_exceeded = false;
