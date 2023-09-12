@@ -259,15 +259,11 @@ classdef Simulation
             while true
         
                 % TASK 1: path following, paper formulation
-                V_h = round(kp*norm(x_d - ee_position_h) - kd*norm(J1_hm1*q_dot_hm1),4);
-                x_dot_d_h = round(V_h * ((x_d - ee_position_h) / norm(x_d - ee_position_h)),4);
-                x_ddot_d_h =  round( (x_dot_d_h-J1_hm1*q_dot_hm1) / T ,4);
-
-                m1 = length(x_ddot_d_h);
+                % V_h = round(kp*norm(x_d - ee_position_h) - kd*norm(J1_hm1*q_dot_hm1),4);
+                % x_dot_d_h = round(V_h * ((x_d - ee_position_h) / norm(x_d - ee_position_h)),4);
+                % x_ddot_d_h =  round( (x_dot_d_h-J1_hm1*q_dot_hm1) / T ,4);
+                % m1 = length(x_ddot_d_h);
                  
-                % TASK 2: self motion dumping
-                % q_dot_cs = -1000*q_dot_h;
-                % m2 = length(q_dot_cs);
 
                 v_max = 0.5; 
                 a_max = 2;
@@ -308,14 +304,15 @@ classdef Simulation
 
                 m1 = length(x_ddot_d_h);
 
-                %x_ddot_d_h = x_ddot_d_h + 0.001*((x_d - ee_position_h) / norm(x_d - ee_position_h));
-                
                 x_dot_d = [x_dot_d, x_dot_d_h];
                 x_ddot_d = [x_ddot_d, x_ddot_d_h];
-                
+
+                % TASK 2: self motion dumping
+                q_ddot_cs = -1000*q_dot_h;
+                m2 = length(q_ddot_cs);
                 
                 % SNS solution
-                q_ddot_new = SNS_acceleration_multitask(ndof, {m1}, {J1_h}, {J1_dot_h}, {x_ddot_d_h}, bounds, q_h, q_dot_h, T, false);
+                q_ddot_new = SNS_acceleration_multitask(ndof, {m1, m2}, {J1_h, J2_h}, {J1_dot_h, J2_dot_h}, {x_ddot_d_h, q_ddot_cs}, bounds, q_h, q_dot_h, T, false);
                 q_dot_new = q_dot_h + q_ddot_new*T;
                 q_new = q_h + q_dot_h*T + 0.5*q_ddot_new*T^2;
 
@@ -353,8 +350,6 @@ classdef Simulation
                 fprintf('bound_1       = ');disp(bound_1);
                 fprintf('bound_2       = ');disp(bound_2);
                 fprintf('ee_position   = ');disp(self.robot.get_ee_position(q_new)');
-                fprintf('e_ddot        = ');disp(e_ddot);
-                fprintf('e_dot         = ');disp(e_dot);  
                 fprintf('e_h           = ');disp(e_h);
                 fprintf('e_tot         = ');disp(e_tot);
                 fprintf('x_d           = ');disp(x_d');

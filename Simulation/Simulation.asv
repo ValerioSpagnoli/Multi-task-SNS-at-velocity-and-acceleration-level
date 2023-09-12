@@ -239,9 +239,6 @@ classdef Simulation
             t=0;
             e_h = 0;
             e_tot = 0;
-            x_d_hm1 = zeros(3,1);
-            x_dot_d_hm1 = zeros(3,1);
-            x_ddot_d_hm1 = zeros(3,1);
 
             % all configurations during task
             qs = [q_h];
@@ -262,11 +259,11 @@ classdef Simulation
             while true
         
                 % TASK 1: path following, paper formulation
-                V_h = round(kp*norm(x_d - ee_position_h) - kd*norm(J1_hm1*q_dot_hm1),4);
-                x_dot_d_h = round(V_h * ((x_d - ee_position_h) / norm(x_d - ee_position_h)),4);
-                x_ddot_d_h =  round( (x_dot_d_h-J1_hm1*q_dot_hm1) / T ,4);
+                % V_h = round(kp*norm(x_d - ee_position_h) - kd*norm(J1_hm1*q_dot_hm1),4);
+                % x_dot_d_h = round(V_h * ((x_d - ee_position_h) / norm(x_d - ee_position_h)),4);
+                % x_ddot_d_h =  round( (x_dot_d_h-J1_hm1*q_dot_hm1) / T ,4);
 
-                m1 = length(x_ddot_d_h);
+                % m1 = length(x_ddot_d_h);
                  
                 % TASK 2: self motion dumping
                 % q_dot_cs = -1000*q_dot_h;
@@ -299,23 +296,17 @@ classdef Simulation
                 end
                   
                 if (norm(ee_position_h-x_d) >= bound_1)
-                    x_d_h = pi + v * ((a_max*t^2)/2);
                     x_dot_d_h = v * a_max*t;
                     x_ddot_d_h = v * a_max;
                 elseif (norm(ee_position_h-x_d) < bound_1 && norm(ee_position_h-x_d) >= bound_2)
-                    x_d_h = pi + v * (v_max*t-(v_max^2/(2*a_max)));
                     x_dot_d_h = v * v_max;
                     x_ddot_d_h = zeros(3,1);
                 elseif (norm(ee_position_h-x_d) < bound_2)
-                    x_d_h = pi + v * (-((a_max*(t-Tt)^2)/2) + v_max*Tt - (v_max^2/a_max));
                     x_dot_d_h = - v * a_max*(t-Tt);
                     x_ddot_d_h = - v * a_max;
                 end
 
                 m1 = length(x_ddot_d_h);
-
-                x_ddot_d_h = x_ddot_d_h + 0.001*((x_d - ee_position_h) / norm(x_d - ee_position_h));
-                
 
                 x_dot_d = [x_dot_d, x_dot_d_h];
                 x_ddot_d = [x_ddot_d, x_ddot_d_h];
@@ -335,11 +326,6 @@ classdef Simulation
                     end
                 end
                     
-%                 delta_ee_position = norm(self.robot.get_ee_position(q_new)-ee_position_h);
-%                 delta_x_d_h = norm(x_d_h - x_d_hm1);
-%                 e_h = round(delta_x_d_h - delta_ee_position,4);
-                % e_h = norm(x_d_h - self.robot.get_ee_position(q_new));
-
                 x_ddot_r = J1_h*q_ddot_new + J1_dot_h*q_dot_new;
                 x_dot_r = J1_h*q_dot_new;
                 e_ddot = norm(x_ddot_d_h-x_ddot_r);
@@ -364,12 +350,7 @@ classdef Simulation
                 fprintf('Tt            = ');disp(Tt);
                 fprintf('bound_1       = ');disp(bound_1);
                 fprintf('bound_2       = ');disp(bound_2);
-%                 fprintf('delta_ee_pos  = ');disp(delta_ee_position');
-%                 fprintf('delta_x_d_h   = ');disp(delta_x_d_h');
-                % fprintf('x_d_h         = ');disp(x_d_h');
                 fprintf('ee_position   = ');disp(self.robot.get_ee_position(q_new)');
-                fprintf('e_ddot        = ');disp(e_ddot);
-                fprintf('e_dot         = ');disp(e_dot);  
                 fprintf('e_h           = ');disp(e_h);
                 fprintf('e_tot         = ');disp(e_tot);
                 fprintf('x_d           = ');disp(x_d');
@@ -395,9 +376,6 @@ classdef Simulation
                 J1_hm1 = J1_h;
                 J1_dot_hm1 = J1_dot_h;
                 ee_position_hm1 = ee_position_h;
-                x_d_hm1 = x_d_h;
-                x_dot_d_hm1 = x_dot_d_h;
-                x_ddot_d_hm1 = x_ddot_d_h;
         
                 % update current cunfiguration to new configuration
                 q_h = q_new;
@@ -408,10 +386,10 @@ classdef Simulation
                 J1_dot_h = self.robot.get_J_dot(q_h, q_dot_h);
                 ee_position_h = self.robot.get_ee_position(q_h);
 
-                if  ((norm(x_dot_r) < self.epsilon || t>=Tt) && t>(Tt-Ts)) || norm(ee_position_h - x_d) < self.epsilon
+                if  ((norm(x_dot_r) < self.epsilon || t>=Tt) && t>(Tt-Ts)) || norm(ee_position_h - x_d) < 0.0001
                     fprintf('norm(x_dot_d_h) < self.epsilon           = ');disp(norm(x_dot_d_h) < self.epsilon);
                     fprintf('t>=Tt                                    = ');disp(t>=Tt);
-                    fprintf('norm(ee_position_h - x_d) < self.epsilon = ');disp(norm(ee_position_h - x_d) < self.epsilon);
+                    fprintf('norm(ee_position_h - x_d) < self.epsilon = ');disp(norm(ee_position_h - x_d) < 0.0001);
 
                     k = k+1;
                     if k>size(self.path,2)
@@ -423,7 +401,6 @@ classdef Simulation
                     pf = x_d;
                     t = 0;
                     e_tot = 0;
-                    x_d_hm1 = 0;
                     saturation_counter = 0;
 
                     versors{end+1} = [pi, (pf-pi)/norm(pf-pi)];

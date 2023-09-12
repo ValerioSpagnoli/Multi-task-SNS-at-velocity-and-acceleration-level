@@ -1,6 +1,15 @@
+% Parameters:
+%  > m = {m_1, ..., m_k}: cell array with dimension of each task 
+%  > J = {J_1, ..., J_k}: cell array with Jacobian matrix, one for each task 
+%  > x_dot = {x_dot_1, ..., x_dot_k}: cell array with desired task velocity
+%  > bounds_max = [bounds_max_1, ..., bounds_max_n]: maximum bounds for each joint
+%  > bounds_min = [bounds_min_1, ..., bounds_min_n]: minimum bounds for each joint
+%  > verbose = <true, false>: enable prints
+% Return: q_dot_SNS: solution of multitask SNS algorithm 
+
 function q_ddot_SNS = SNS_acceleration_multitask(n, m, J, J_dot, x_ddot, bounds, q, q_dot, T, verbose)
     
-    [bounds_Q_ddot_min, bounds_Q_ddot_max] = shaping_joint_acceleration_bounds(n, bounds, q, q_dot, T);
+    [bounds_Q_ddot_min, bounds_Q_ddot_max] = shaping_joint_acceleration_bounds(bounds, q, q_dot, T);
 
     l = length(m);
 
@@ -28,14 +37,36 @@ function q_ddot_SNS = SNS_acceleration_multitask(n, m, J, J_dot, x_ddot, bounds,
         
         J_k = round( J{k}, 4);
         J_dot_k = round( J_dot{k}, 4);
-        task_ddot_k = round( x_ddot{k}, 4);
+        x_ddot_k = round( x_ddot{k}, 4);
         m_k = m{k};
 
         if m_k < n
-            q_ddot_bar_k = algorithm_3(n, m_k, task_ddot_k, J_k, J_dot_k, q_ddot_bar_km1, P_km1, q_dot, bounds_Q_ddot_min, bounds_Q_ddot_max, verbose);
+            q_ddot_bar_k = algorithm3(n, m_k, x_ddot_k, J_k)
         else
-            q_ddot_bar_k = algorithm_4(n, task_ddot_k, q_ddot_bar_km1, P_km1, bounds_Q_ddot_min, bounds_Q_ddot_max, verbose);
+
+            W_cs = eye(n);
+    
+            for i=1:n
+                if q_ddot_bar_km1(i) == bounds_Q_ddot_min(i) || q_ddot_bar_km1(i) == bounds_Q_ddot_max(i)
+                    W_cs(i,i) = 0;
+                end
+            end
+        
+            P_bar_cs = (eye(n) - pinv((eye(n)-W_cs)*P_km1))*P_km1;
+            a = P_bar_cs*q_ddot_cs;
+            b = q_ddot_bar_km1;
+        
+            [task_scaling_factor, most_critical_joint] = getTaskScalingFactor(n, a, b, bounds_Q_ddot_min, bounds_Q_ddot_max, verbose);
+            s_cs = task_scaling_factor;
+            q_ddot_SNS = q_ddot_bar_km1 + s_cs*P_bar_cs*q_ddot_cs;   
         end
+        
+        if verbose
+        fprintf('P_bar_k = P_km1 = \n');disp(P_km1);
+        fprintf('q_ddot_bar_km1 = ');disp(q_ddot_bar_km1');
+        end
+
+
         
         q_ddot_bar{length(q_ddot_bar)+1} = q_ddot_bar_k;
 
@@ -48,7 +79,7 @@ function q_ddot_SNS = SNS_acceleration_multitask(n, m, J, J_dot, x_ddot, bounds,
 end
 
 
-function q_ddot_bar_k = algorithm_3(n, m_k, x_ddot_k, J_k, J_dot_k, q_ddot_bar_km1, P_km1, q_dot, bounds_Q_ddot_min, bounds_Q_ddot_max, verbose)
+function q_ddot_bar_k = algorithm3(n, m_k, x_ddot_k, J_k, J_dot_k, q_ddot_bar_km1, P_km1, q_dot, bounds_Q_ddot_min, bounds_Q_ddot_max, verbose)
     W_star_k = eye(n);
     P_bar_star_k = eye(n);
     q_ddot_star_N_k = zeros(n,1);
@@ -58,11 +89,6 @@ function q_ddot_bar_k = algorithm_3(n, m_k, x_ddot_k, J_k, J_dot_k, q_ddot_bar_k
     q_ddot_N_k = zeros(n,1);
     s_k=1;
     P_bar_k = P_km1;
-
-    if verbose
-        fprintf('P_bar_k = P_km1 = \n');disp(P_km1);
-        fprintf('q_ddot_bar_km1 = ');disp(q_ddot_bar_km1');
-    end
 
     while_loop = 1;
     limit_exceeded = true;
@@ -235,29 +261,6 @@ function q_ddot_bar_k = algorithm_3(n, m_k, x_ddot_k, J_k, J_dot_k, q_ddot_bar_k
 end
 
 
-function q_ddot_bar_k = algorithm_4(n, q_ddot_cs, q_ddot_bar_km1, P_km1, bounds_Q_ddot_min, bounds_Q_ddot_max, verbose)
-
-    if verbose
-        fprintf('P_bar_k = P_km1 = \n');disp(P_km1);
-        fprintf('q_ddot_bar_km1 = ');disp(q_ddot_bar_km1');
-    end
-
-    W_cs = eye(n);
-
-    for i=1:n
-        if q_ddot_bar_km1(i) == bounds_Q_ddot_min(i) || q_ddot_bar_km1(i) == bounds_Q_ddot_max(i)
-            W_cs(i,i) = 0;
-        end
-    end
-
-    P_bar_cs = (eye(n) - pinv((eye(n)-W_cs)*P_km1))*P_km1;
-    a = P_bar_cs*q_ddot_cs;
-    b = q_ddot_bar_km1;
-
-    [task_scaling_factor, most_critical_joint] = getTaskScalingFactor(n, a, b, bounds_Q_ddot_min, bounds_Q_ddot_max, verbose);
-    s_cs = task_scaling_factor;
-    q_ddot_bar_k = q_ddot_bar_km1 + s_cs*P_bar_cs*q_ddot_cs;   
-end
 
 
 
@@ -319,7 +322,7 @@ end
 
 
 % shaping joint acceleration bounds
-function [bounds_Q_ddot_min, bounds_Q_ddot_max] = shaping_joint_acceleration_bounds(n, bounds, q, q_dot, T)
+function [bounds_Q_ddot_min, bounds_Q_ddot_max] = shaping_joint_acceleration_bounds(bounds, q, q_dot, T)
     
     bounds_min_position = bounds{1}(1,:);
     bounds_max_position = bounds{1}(2,:);
