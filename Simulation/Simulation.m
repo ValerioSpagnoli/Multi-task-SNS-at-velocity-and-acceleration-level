@@ -317,7 +317,7 @@ classdef Simulation
                 q_new = q_h + q_dot_h*T + 0.5*q_ddot_new*T^2;
 
                 saturated_acc = false;
-                for i=1:ndof
+                for i=1:ndofgit.git
                     if round(q_ddot_new(i),4)>=round(bounds_max_acceleration(i),4) || round(q_ddot_new(i),4)<=round(bounds_min_acceleration(i),4)
                         saturation_counter=saturation_counter+1;
                         saturated_acc = true;
