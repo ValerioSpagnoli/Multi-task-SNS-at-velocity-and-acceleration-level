@@ -74,13 +74,6 @@ classdef MATLAB_simulation
 % 
 %             plot3(points_x, points_y, points_z, '-square', 'Color', 'r');
 %             hold on
-%             plot3(0.3599, 0.2630, 1.0718, '-o');
-%             hold on
-%             plot3(0.1, 0.35, 1.0235, '-o');
-%             hold on
-%             % quiver3(-0.9339, 0.3126, -0.1736, -0.9339, 0.3126, -0.1736);
-%             quiver3(0.3599, 0.2630, 1.0718, -0.9339, 0.3126, -0.1736);
-%             hold on
 %             grid on
     
         end

@@ -78,7 +78,8 @@ classdef Simulation
             
             % compute path
             fprintf('Creating path ... ')
-            self.path = self.create_path(1);
+            self.path = self.create_hexagonal_path(2);
+            %self.path = self.create_circular_path(1);
             fprintf('done! \n');
             
             % compute simulation
@@ -93,7 +94,7 @@ classdef Simulation
         end
 
         %% create path
-        function path = create_path(self, n_cycle)
+        function path = create_hexagonal_path(self, n_cycle)
             poly_0 = [[0; 0; 0.2], [0; 0.1732; 0.1], [0; 0.1732; -0.1], [0; 0; -0.2], [0; -0.1732; -0.1], [0; -0.1732; 0.1]];
             
             if strcmp(self.robot_name, 'KUKA_LBR_IIWA_7_R800')
@@ -109,6 +110,19 @@ classdef Simulation
                 end
             end
             path = [points, poly_0(:,1)]+center;
+        end
+
+        function path = create_circular_path(self, n_cycle)
+            t = (0:0.2:20)'; % Time
+            count = length(t);
+            if strcmp(self.robot_name, 'KUKA_LBR_IIWA_7_R800')
+                center = [0.1; 0.35; 0.8235];
+            elseif strcmp(self.robot_name, 'KUKA_LBR_IV')
+                center = [0.1; 0.35; 0.6235];
+            end
+            radius = 0.2;
+            theta = t*(2*pi/t(end));
+            path = center + radius*[zeros(size(theta)) cos(theta) sin(theta)]';
         end
 
         %% run simulation velocity level
@@ -209,7 +223,7 @@ classdef Simulation
 
                             
             T = self.simulation_step;
-            kp = 10;
+            kp = 5;
             kd = 0.1;
             
             % current configuration (time h)
@@ -244,68 +258,77 @@ classdef Simulation
             qs = [q_h];
             eds = [];
 
-            x_dot_d = [];
-            x_ddot_d = [];
-            versors = {};
+            %x_dot_d = [];
+            %x_ddot_d = [];
+            %versors = {};
             
             k = 1;
+
+            %path_k = self.path(1:3,k);
+            %path_km1 = self.robot.ee_position_0;
+
             x_d = self.path(1:3,k);
-            pi = self.robot.ee_position_0;
-            pf = x_d;
-            versors{end+1} = [pi, (pf-pi)/norm(pf-pi)];
+            %pi = path_km1;
+            %pf = x_d;
+
+            %versors{end+1} = [pi, (pf-pi)/norm(pf-pi)];
 
             saturation_counter = 0;
             
             while true
         
+                %TASK 1: path following with trapezodail velocity profile
+%                 v_max = 0.5; 
+%                 a_max = 2;
+% 
+%                 L = norm(pf-pi);
+%                 v = (pf-pi)/L;
+% 
+%                 Ts = v_max/a_max + (e_tot/2)/v_max;
+%                 Tt = (L*a_max+v_max^2)/(a_max*v_max) + e_tot/v_max;
+% 
+%                 bound_1 = L-(v_max^2/(2*a_max)) - e_tot/2;
+%                 if bound_1 > L
+%                     bound_1 = L;
+%                 end
+% 
+%                 bound_2 = (v_max^2/(2*a_max)) + e_tot/2;
+%                 if bound_2 < 0
+%                     bound_2 = 0;
+%                 end
+% 
+%                 if bound_1 < bound_2
+%                     bound_1 = L/2;
+%                     bound_2 = L/2;
+%                 end
+%                   
+%                 if (norm(ee_position_h-x_d) >= bound_1)
+%                     x_dot_d_h = v * a_max*t;
+%                     x_ddot_d_h = v * a_max;
+%                     x_ddot_d_path = v * a_max;
+%                 elseif (norm(ee_position_h-x_d) < bound_1 && norm(ee_position_h-x_d) >= bound_2)
+%                     x_dot_d_h = v * v_max;
+%                     x_ddot_d_h = zeros(3,1);
+%                 elseif (norm(ee_position_h-x_d) < bound_2)
+%                     x_dot_d_h = - v * a_max*(t-Tt);
+%                     x_ddot_d_h = - v * a_max;
+%                     x_ddot_d_path = - v * a_max;
+%                 end
+% 
+%                 %e_ddot = (J1_h*q_ddot_h + J1_dot_h*q_dot_h) - x_ddot_d_path;
+%                 %x_ddot_d_h = x_ddot_d_h + 0.01*e_ddot;
+% 
+%                 m1 = length(x_ddot_d_h);
+% 
+%                 x_dot_d = [x_dot_d, x_dot_d_h];
+%                 x_ddot_d = [x_ddot_d, x_ddot_d_h];
+
+                
                 % TASK 1: path following, paper formulation
-                % V_h = round(kp*norm(x_d - ee_position_h) - kd*norm(J1_hm1*q_dot_hm1),4);
-                % x_dot_d_h = round(V_h * ((x_d - ee_position_h) / norm(x_d - ee_position_h)),4);
-                % x_ddot_d_h =  round( (x_dot_d_h-J1_hm1*q_dot_hm1) / T ,4);
-                % m1 = length(x_ddot_d_h);
-                 
-
-                v_max = 0.5; 
-                a_max = 2;
-                %v_max = 0.4*bounds_max_velocity(2)+0.4*bounds_min_velocity(4)+0.126*bounds_max_velocity(6);
-                %a_max = 0.4*bounds_max_acceleration(2)+0.4*bounds_min_acceleration(4)+0.126*bounds_max_acceleration(6);
-
-                L = norm(pf-pi);
-                v = (pf-pi)/L;
-
-                Ts = v_max/a_max + (e_tot/2)/v_max;
-                Tt = (L*a_max+v_max^2)/(a_max*v_max) + e_tot/v_max;
-
-                bound_1 = L-(v_max^2/(2*a_max)) - e_tot/2;
-                if bound_1 > L
-                    bound_1 = L;
-                end
-
-                bound_2 = (v_max^2/(2*a_max)) + e_tot/2;
-                if bound_2 < 0
-                    bound_2 = 0;
-                end
-
-                if bound_1 < bound_2
-                    bound_1 = L/2;
-                    bound_2 = L/2;
-                end
-                  
-                if (norm(ee_position_h-x_d) >= bound_1)
-                    x_dot_d_h = v * a_max*t;
-                    x_ddot_d_h = v * a_max;
-                elseif (norm(ee_position_h-x_d) < bound_1 && norm(ee_position_h-x_d) >= bound_2)
-                    x_dot_d_h = v * v_max;
-                    x_ddot_d_h = zeros(3,1);
-                elseif (norm(ee_position_h-x_d) < bound_2)
-                    x_dot_d_h = - v * a_max*(t-Tt);
-                    x_ddot_d_h = - v * a_max;
-                end
-
+                V_h = round(kp*norm(x_d - ee_position_h) - kd*norm(J1_hm1*q_dot_hm1),4);
+                x_dot_d_h = round(V_h * ((x_d - ee_position_h) / norm(x_d - ee_position_h)),4);
+                x_ddot_d_h =  round( (x_dot_d_h-J1_hm1*q_dot_hm1) / T ,4);
                 m1 = length(x_ddot_d_h);
-
-                x_dot_d = [x_dot_d, x_dot_d_h];
-                x_ddot_d = [x_ddot_d, x_ddot_d_h];
 
                 % TASK 2: self motion dumping
                 q_ddot_cs = -1000*q_dot_h;
@@ -316,24 +339,24 @@ classdef Simulation
                 q_dot_new = q_dot_h + q_ddot_new*T;
                 q_new = q_h + q_dot_h*T + 0.5*q_ddot_new*T^2;
 
-                saturated_acc = false;
-                for i=1:ndofgit.git
+                for i=1:ndof
                     if round(q_ddot_new(i),4)>=round(bounds_max_acceleration(i),4) || round(q_ddot_new(i),4)<=round(bounds_min_acceleration(i),4)
                         saturation_counter=saturation_counter+1;
-                        saturated_acc = true;
                         break;
                     end
                 end
                     
-                x_ddot_r = J1_h*q_ddot_new + J1_dot_h*q_dot_new;
-                x_dot_r = J1_h*q_dot_new;
-                e_ddot = norm(x_ddot_d_h-x_ddot_r);
-                e_dot = norm(x_dot_d_h-x_dot_r);
-                e_h = e_dot*T+0.5*e_ddot*T^2;
-
-                if saturated_acc
-                    e_tot = e_tot + e_h;
-                end
+%                 x_ddot_r = J1_h*q_ddot_new + J1_dot_h*q_dot_new;
+%                 x_dot_r = J1_h*q_dot_new;
+%                 e_ddot = norm(x_ddot_d_h-x_ddot_r);
+%                 e_dot = norm(x_dot_d_h-x_dot_r);
+%                 e_h = e_dot*T+0.5*e_ddot*T^2;
+% 
+%                 if e_ddot>0
+%                     e_tot = e_tot + e_h;
+%                 else
+%                     e_tot = e_tot - e_h;
+%                 end
 
                 fprintf('==============================================================================\n')
 
@@ -344,14 +367,15 @@ classdef Simulation
                 %fprintf('pi            = ');disp(pi');
                 %fprintf('pf            = ');disp(pf');
                 %fprintf('v             = ');disp(v');
-                fprintf('t             = ');disp(t);
-                fprintf('Ts            = ');disp(Ts);
-                fprintf('Tt            = ');disp(Tt);
-                fprintf('bound_1       = ');disp(bound_1);
-                fprintf('bound_2       = ');disp(bound_2);
-                fprintf('ee_position   = ');disp(self.robot.get_ee_position(q_new)');
-                fprintf('e_h           = ');disp(e_h);
-                fprintf('e_tot         = ');disp(e_tot);
+                %fprintf('t             = ');disp(t);
+                %fprintf('Ts            = ');disp(Ts);
+                %fprintf('Tt            = ');disp(Tt);
+                %fprintf('bound_1       = ');disp(bound_1);
+                %fprintf('bound_2       = ');disp(bound_2);
+                %fprintf('ee_position   = ');disp(self.robot.get_ee_position(q_new)');
+                %fprintf('e_ddot        = ');disp(e_ddot');
+                %fprintf('e_h           = ');disp(e_h);
+                %fprintf('e_tot         = ');disp(e_tot);
                 fprintf('x_d           = ');disp(x_d');
                 fprintf('x_dot_d_h     = ');disp(x_dot_d_h');
                 fprintf('x_ddot_d_h    = ');disp(x_ddot_d_h');
@@ -385,27 +409,30 @@ classdef Simulation
                 J1_dot_h = self.robot.get_J_dot(q_h, q_dot_h);
                 ee_position_h = self.robot.get_ee_position(q_h);
 
-                if  ((norm(x_dot_r) < self.epsilon || t>=Tt) && t>(Tt-Ts)) || norm(ee_position_h - x_d) < 0.0001
-                    fprintf('norm(x_dot_d_h) < self.epsilon           = ');disp(norm(x_dot_d_h) < self.epsilon);
-                    fprintf('t>=Tt                                    = ');disp(t>=Tt);
-                    fprintf('norm(ee_position_h - x_d) < self.epsilon = ');disp(norm(ee_position_h - x_d) < 0.0001);
+                if  norm(ee_position_h - x_d) < 0.01 %|| ((norm(x_dot_r) < self.epsilon || t>=Tt) && t>(Tt-Ts))
+                    %fprintf('norm(x_dot_d_h) < self.epsilon           = ');disp(norm(x_dot_d_h) < self.epsilon);
+                    %fprintf('t>=Tt                                    = ');disp(t>=Tt);
+                    %fprintf('norm(ee_position_h - x_d) < self.epsilon = ');disp(norm(ee_position_h - x_d) < 0.0001);
 
                     k = k+1;
                     if k>size(self.path,2)
                         break;
                     end
                     
+                    %path_k = self.path(1:3,k);
+                    %path_km1 = self.path(1:3,k-1);
+
                     x_d = self.path(1:3,k);
-                    pi = ee_position_h;
-                    pf = x_d;
-                    t = 0;
-                    e_tot = 0;
+                    %pi = ee_position_h;
+                    %pf = x_d;
+                    %t = 0;
+                    %e_tot = 0;
                     saturation_counter = 0;
 
-                    versors{end+1} = [pi, (pf-pi)/norm(pf-pi)];
+                    %versors{end+1} = [pi, (pf-pi)/norm(pf-pi)];
                 end
 
-                t = t+T;
+                %t = t+T;
 
                 % Directional error
                 e_d = acos(dot(((x_d-ee_position_h)/norm(x_d-ee_position_h)), ((J1_h*q_dot_h)/norm(J1_h*q_dot_h))));
