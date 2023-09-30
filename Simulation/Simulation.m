@@ -11,9 +11,6 @@ classdef Simulation
         epsilon
         joint_positions
         directional_error
-        x_dot_d
-        x_ddot_d
-        versors
     end
 
     methods
@@ -78,7 +75,7 @@ classdef Simulation
             
             % compute path
             fprintf('Creating path ... ')
-            self.path = self.create_hexagonal_path(2);
+            self.path = self.create_hexagonal_path(1);
             %self.path = self.create_circular_path(1);
             fprintf('done! \n');
             
@@ -88,12 +85,14 @@ classdef Simulation
             if strcmp(level, 'velocity')
                 [self.joint_positions, self.directional_error] = self.run_simulation_velocity_level();
             elseif strcmp(level, 'acceleration')
-                [self.joint_positions, self.directional_error, self.x_dot_d, self.x_ddot_d, self.versors] = self.run_simulation_acceleration_level();
+                [self.joint_positions, self.directional_error] = self.run_simulation_acceleration_level();
             end
             fprintf('Simulation ended. \n')
         end
 
         %% create path
+
+        % Create hexagonal path
         function path = create_hexagonal_path(self, n_cycle)
             poly_0 = [[0; 0; 0.2], [0; 0.1732; 0.1], [0; 0.1732; -0.1], [0; 0; -0.2], [0; -0.1732; -0.1], [0; -0.1732; 0.1]];
             
@@ -112,9 +111,10 @@ classdef Simulation
             path = [points, poly_0(:,1)]+center;
         end
 
+        % Create circular path
         function path = create_circular_path(self, n_cycle)
-            t = (0:0.2:20)'; % Time
-            count = length(t);
+            t = (0:0.2:10)'; 
+            
             if strcmp(self.robot_name, 'KUKA_LBR_IIWA_7_R800')
                 center = [0.1; 0.35; 0.8235];
             elseif strcmp(self.robot_name, 'KUKA_LBR_IV')
@@ -138,15 +138,11 @@ classdef Simulation
             % current configuration (time h)
             q_h = self.q_0;
             q_dot_h = self.q_dot_0;
-            q_ddot_h = self.q_ddot_0;
             ee_position_h = self.robot.ee_position_0;
             J1_h = self.robot.get_J(self.q_0);
             
             % configuration at time h-1
-            q_hm1 = self.q_0;
             q_dot_hm1 = self.q_dot_0;
-            q_ddot_hm1 = self.q_ddot_0;
-            ee_position_hm1 = self.robot.ee_position_0;
             J1_hm1 = self.robot.get_J(self.q_0);
             
             % all configurations during task
@@ -154,10 +150,10 @@ classdef Simulation
             eds = [];
         
             k = 1;
+            x_d = round(self.path(1:3,k),4);
+
             while k<=size(self.path,2)
-                
-                x_d = round(self.path(1:3,k),4);
-                
+
                 fprintf('k = %d, norm(ee_position_h - x_d) = %f\n', k, norm(ee_position_h-x_d));
             
                 if norm(ee_position_h - x_d) < 0.005
@@ -174,22 +170,11 @@ classdef Simulation
                 q_dot_new = SNS_velocity_multitask(ndof, {m1}, {J1_h}, {x_dot_d_h}, bounds, q_h, T, false);
                 q_new = q_h + q_dot_new*T;
 
-                bounds_min_velocity = bounds{2}(1,:);
-                bounds_max_velocity = bounds{2}(2,:);
-                for i=1:ndof
-                    if round(q_dot_new(i),4)>round(bounds_max_velocity(i),4)
-                        fprintf('Joint %d out of max velocity bounds: q_dot(%d) = %f, bounds_max_velocity(%d) = %f\n',i, i, q_dot_new(i), i, bounds_max_velocity(i));
-                    elseif round(q_dot_new(i),4)<round(bounds_min_velocity(i),4)
-                        fprintf('Joint %d out of min velocity bounds: q_dot(%d) = %f, bounds_min_velocity(%d) = %f\n',i, i, q_dot_new(i), i, bounds_min_velocity(i));
-                    end
-                end
-        
-                % set previous configuration to current configuration ...
-                q_hm1 = q_h;
+                % Set previous configuration to current configuration
                 q_dot_hm1 = q_dot_h;
                 J1_hm1 = J1_h;
         
-                % update current cunfiguration to new configuration
+                % Update current cunfiguration to new configuration
                 q_h = q_new;
                 q_dot_h = q_dot_new;
                 J1_h = self.robot.get_J(q_h);
@@ -206,126 +191,55 @@ classdef Simulation
         end
 
         %% run simulation acceleration level
-        function [qs, eds, x_dot_d, x_ddot_d, versors] = run_simulation_acceleration_level(self)
+        function [qs, eds] = run_simulation_acceleration_level(self)
 
             ndof = self.robot.ndof;
-
             bounds = {self.robot.bounds_position, self.robot.bounds_velocity, self.robot.bounds_acceleration};
-
-            bounds_min_position = bounds{1}(1,:);
-            bounds_max_position = bounds{1}(2,:);
-            
-            bounds_min_velocity = bounds{2}(1,:);
-            bounds_max_velocity = bounds{2}(2,:);
-                    
-            bounds_min_acceleration = bounds{3}(1,:);
-            bounds_max_acceleration = bounds{3}(2,:);
-
                             
             T = self.simulation_step;
-            kp = 5;
-            kd = 0.1;
+            Kp = 5;
+            Kd = 0.1;
             
-            % current configuration (time h)
+            % Current configuration (time h)
             q_h = self.robot.q_0;
             q_dot_h = self.robot.q_dot_0;
             q_ddot_h = self.robot.q_ddot_0;
             ee_position_h = self.robot.ee_position_0;
 
+            % Jacobians of task 1 (time h)
             J1_h = self.robot.get_J(q_h);
             J1_dot_h = self.robot.get_J_dot(q_h, q_dot_h);
 
+            % Jacobians of task 2 (time h)
             J2_h = eye(ndof);
             J2_dot_h = zeros(7,7);
 
-            % configuration at time h-1
+            % Previous configuration (time h-1)
             q_hm1 = self.robot.q_0;
             q_dot_hm1 = self.robot.q_ddot_0;
-            q_ddot_hm1 = self.robot.q_ddot_0;
-            ee_position_hm1 = self.robot.ee_position_0;
 
-            J1_hm1 = self.robot.get_J(q_hm1);
-            J1_dot_hm1 = self.robot.get_J_dot(q_hm1, q_dot_hm1);
+            % Jacobian of task 1 (time h-1)
+            J1_hm1 = self.robot.get_J(q_hm1);            
 
-            J2_hm1 = eye(ndof);
-            J2_dot_hm1 = zeros(7,7);
-            
-            t=0;
-            e_h = 0;
-            e_tot = 0;
-
-            % all configurations during task
+            % All configurations during task
             qs = [q_h];
             eds = [];
-
-            %x_dot_d = [];
-            %x_ddot_d = [];
-            %versors = {};
             
             k = 1;
-
-            %path_k = self.path(1:3,k);
-            %path_km1 = self.robot.ee_position_0;
-
             x_d = self.path(1:3,k);
-            %pi = path_km1;
-            %pf = x_d;
-
-            %versors{end+1} = [pi, (pf-pi)/norm(pf-pi)];
-
-            saturation_counter = 0;
             
             while true
-        
-                %TASK 1: path following with trapezodail velocity profile
-%                 v_max = 0.5; 
-%                 a_max = 2;
-% 
-%                 L = norm(pf-pi);
-%                 v = (pf-pi)/L;
-% 
-%                 Ts = v_max/a_max + (e_tot/2)/v_max;
-%                 Tt = (L*a_max+v_max^2)/(a_max*v_max) + e_tot/v_max;
-% 
-%                 bound_1 = L-(v_max^2/(2*a_max)) - e_tot/2;
-%                 if bound_1 > L
-%                     bound_1 = L;
-%                 end
-% 
-%                 bound_2 = (v_max^2/(2*a_max)) + e_tot/2;
-%                 if bound_2 < 0
-%                     bound_2 = 0;
-%                 end
-% 
-%                 if bound_1 < bound_2
-%                     bound_1 = L/2;
-%                     bound_2 = L/2;
-%                 end
-%                   
-%                 if (norm(ee_position_h-x_d) >= bound_1)
-%                     x_dot_d_h = v * a_max*t;
-%                     x_ddot_d_h = v * a_max;
-%                     x_ddot_d_path = v * a_max;
-%                 elseif (norm(ee_position_h-x_d) < bound_1 && norm(ee_position_h-x_d) >= bound_2)
-%                     x_dot_d_h = v * v_max;
-%                     x_ddot_d_h = zeros(3,1);
-%                 elseif (norm(ee_position_h-x_d) < bound_2)
-%                     x_dot_d_h = - v * a_max*(t-Tt);
-%                     x_ddot_d_h = - v * a_max;
-%                     x_ddot_d_path = - v * a_max;
-%                 end
-% 
-%                 %e_ddot = (J1_h*q_ddot_h + J1_dot_h*q_dot_h) - x_ddot_d_path;
-%                 %x_ddot_d_h = x_ddot_d_h + 0.01*e_ddot;
-% 
-%                 m1 = length(x_ddot_d_h);
-% 
-%                 x_dot_d = [x_dot_d, x_dot_d_h];
-%                 x_ddot_d = [x_ddot_d, x_ddot_d_h];
 
+                if norm(ee_position_h - x_d) < 0.01
+                    k = k+1;       
+                    if k>size(self.path,2)
+                        break;
+                    end
+                    x_d = self.path(1:3,k);
+                end
                 
                 % TASK 1: path following, paper formulation
-                V_h = round(kp*norm(x_d - ee_position_h) - kd*norm(J1_hm1*q_dot_hm1),4);
+                V_h = round(Kp*norm(x_d - ee_position_h) - Kd*norm(J1_hm1*q_dot_hm1),4);
                 x_dot_d_h = round(V_h * ((x_d - ee_position_h) / norm(x_d - ee_position_h)),4);
                 x_ddot_d_h =  round( (x_dot_d_h-J1_hm1*q_dot_hm1) / T ,4);
                 m1 = length(x_ddot_d_h);
@@ -339,43 +253,10 @@ classdef Simulation
                 q_dot_new = q_dot_h + q_ddot_new*T;
                 q_new = q_h + q_dot_h*T + 0.5*q_ddot_new*T^2;
 
-                for i=1:ndof
-                    if round(q_ddot_new(i),4)>=round(bounds_max_acceleration(i),4) || round(q_ddot_new(i),4)<=round(bounds_min_acceleration(i),4)
-                        saturation_counter=saturation_counter+1;
-                        break;
-                    end
-                end
-                    
-%                 x_ddot_r = J1_h*q_ddot_new + J1_dot_h*q_dot_new;
-%                 x_dot_r = J1_h*q_dot_new;
-%                 e_ddot = norm(x_ddot_d_h-x_ddot_r);
-%                 e_dot = norm(x_dot_d_h-x_dot_r);
-%                 e_h = e_dot*T+0.5*e_ddot*T^2;
-% 
-%                 if e_ddot>0
-%                     e_tot = e_tot + e_h;
-%                 else
-%                     e_tot = e_tot - e_h;
-%                 end
-
                 fprintf('==============================================================================\n')
 
                 fprintf('k = %d, norm(ee_position_h - x_d) = %f\n\n', k, norm(ee_position_h-x_d));
 
-                %fprintf('v_max         = ');disp(v_max);
-                %fprintf('a_max         = ');disp(a_max);
-                %fprintf('pi            = ');disp(pi');
-                %fprintf('pf            = ');disp(pf');
-                %fprintf('v             = ');disp(v');
-                %fprintf('t             = ');disp(t);
-                %fprintf('Ts            = ');disp(Ts);
-                %fprintf('Tt            = ');disp(Tt);
-                %fprintf('bound_1       = ');disp(bound_1);
-                %fprintf('bound_2       = ');disp(bound_2);
-                %fprintf('ee_position   = ');disp(self.robot.get_ee_position(q_new)');
-                %fprintf('e_ddot        = ');disp(e_ddot');
-                %fprintf('e_h           = ');disp(e_h);
-                %fprintf('e_tot         = ');disp(e_tot);
                 fprintf('x_d           = ');disp(x_d');
                 fprintf('x_dot_d_h     = ');disp(x_dot_d_h');
                 fprintf('x_ddot_d_h    = ');disp(x_ddot_d_h');
@@ -384,8 +265,6 @@ classdef Simulation
                 fprintf('q_dot_new     = ');disp(q_dot_new')
                 fprintf('q_new         = ');disp(q_new')
 
-                fprintf('sat_counter   = ');disp(saturation_counter);
-
                 fprintf('==============================================================================\n')
 
                 if isnan(q_ddot_new)
@@ -393,51 +272,21 @@ classdef Simulation
                 end
 
                 % set previous configuration to current configuration ...
-                q_hm1 = q_h;
                 q_dot_hm1 = q_dot_h;
-                q_ddot_hm1 = q_ddot_h;
                 J1_hm1 = J1_h;
-                J1_dot_hm1 = J1_dot_h;
-                ee_position_hm1 = ee_position_h;
         
                 % update current cunfiguration to new configuration
                 q_h = q_new;
                 q_dot_h = q_dot_new;
-                q_ddot_h = q_ddot_new;
-
+               
                 J1_h = self.robot.get_J(q_h);
                 J1_dot_h = self.robot.get_J_dot(q_h, q_dot_h);
                 ee_position_h = self.robot.get_ee_position(q_h);
 
-                if  norm(ee_position_h - x_d) < 0.01 %|| ((norm(x_dot_r) < self.epsilon || t>=Tt) && t>(Tt-Ts))
-                    %fprintf('norm(x_dot_d_h) < self.epsilon           = ');disp(norm(x_dot_d_h) < self.epsilon);
-                    %fprintf('t>=Tt                                    = ');disp(t>=Tt);
-                    %fprintf('norm(ee_position_h - x_d) < self.epsilon = ');disp(norm(ee_position_h - x_d) < 0.0001);
-
-                    k = k+1;
-                    if k>size(self.path,2)
-                        break;
-                    end
-                    
-                    %path_k = self.path(1:3,k);
-                    %path_km1 = self.path(1:3,k-1);
-
-                    x_d = self.path(1:3,k);
-                    %pi = ee_position_h;
-                    %pf = x_d;
-                    %t = 0;
-                    %e_tot = 0;
-                    saturation_counter = 0;
-
-                    %versors{end+1} = [pi, (pf-pi)/norm(pf-pi)];
-                end
-
-                %t = t+T;
-
                 % Directional error
                 e_d = acos(dot(((x_d-ee_position_h)/norm(x_d-ee_position_h)), ((J1_h*q_dot_h)/norm(J1_h*q_dot_h))));
 
-                % save new configuration
+                % Save new configuration
                 qs = [qs, q_h];
                 eds = [eds, e_d];
             end

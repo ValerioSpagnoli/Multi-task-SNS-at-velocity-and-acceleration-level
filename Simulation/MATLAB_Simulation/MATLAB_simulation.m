@@ -4,9 +4,6 @@ classdef MATLAB_simulation
         robot_model
         joint_positions
         directional_error
-        x_dot_d
-        x_ddot_d
-        versors
         T 
         points
     end
@@ -29,9 +26,6 @@ classdef MATLAB_simulation
 
             self.joint_positions = sim.joint_positions; 
             self.directional_error = sim.directional_error;
-            self.x_dot_d = sim.x_dot_d;
-            self.x_ddot_d = sim.x_ddot_d;
-            self.versors = sim.versors;
             self.T = sim.simulation_step;
             self.points = sim.path;
             
@@ -49,20 +43,6 @@ classdef MATLAB_simulation
                 return;
             end
 
-            if ~isnan(sim.x_dot_d)
-                self.plot_x_dot_d();
-            else
-                disp('Cannot plot x_dot_d because is NaN.')
-                return;
-            end
-
-            if ~isnan(sim.x_ddot_d)
-                self.plot_x_ddot_d();
-            else
-                disp('Cannot plot x_ddot_d because is NaN.')
-                return;
-            end
-
 %             points_x = zeros(1, length(self.points));
 %             points_y = zeros(1, length(self.points));
 %             points_z = zeros(1, length(self.points));
@@ -75,7 +55,7 @@ classdef MATLAB_simulation
 %             plot3(points_x, points_y, points_z, '-square', 'Color', 'r');
 %             hold on
 %             grid on
-    
+%     
         end
 
         %% main function
@@ -114,18 +94,9 @@ classdef MATLAB_simulation
                 points_y(i) = self.points(2,i);
                 points_z(i) = self.points(3,i);
             end
-        
             plot3(points_x, points_y, points_z, '-square', 'Color', 'r');
             hold on
-            grid on
-            for i=1:size(self.versors,2)
-                v = self.versors{i};
-                pi = v(:,1);
-                pf = v(:,2); 
-                quiver3(pi(1), pi(2), pi(3), pf(1), pf(2), pf(3));
-            end
-
-
+        
             p = plot3(gripperPosition(1,1), gripperPosition(1,2), gripperPosition(1,3), 'Color', 'black');
             hold on
             grid on
@@ -169,37 +140,5 @@ classdef MATLAB_simulation
             xlabel('Time [s]');
             ylabel('Directional error [rad]');
         end
-
-        function plot_x_dot_d(self)
-            t_init = 0.001;
-            t_final = length(self.x_dot_d)/1000;
-            time = [0,linspace(t_init,t_final,size(self.x_dot_d,2)-1)];
-
-            figure;
-            plot(time, self.x_dot_d);
-            grid on
-            hold on
-            title('x_dot_D');
-            xlabel('Time [s]');
-            ylabel('x_dot_d [m/s]');
-        end
-
-        function plot_x_ddot_d(self)
-            t_init = 0.001;
-            t_final = length(self.x_ddot_d)/1000;
-            time = [0,linspace(t_init,t_final,size(self.x_ddot_d,2)-1)];
-
-            figure;
-            plot(time, self.x_ddot_d);
-            grid on
-            hold on
-            title('x_ddot_d');
-            xlabel('Time [s]');
-            ylabel('x_ddot_d [m/s^2]');
-            
-            
-
-        end
-
     end
 end
