@@ -16,12 +16,12 @@ classdef MATLAB_simulation
 
             self.robot = sim.robot;
             if strcmp(self.robot.name, 'KUKA_LBR_IIWA_7_R800')
-                self.robot_model = importrobot('iiwa7.urdf'); 
-                self.robot_model.DataFormat = 'row';
+                %self.robot_model = importrobot('iiwa7.urdf'); 
+                %self.robot_model.DataFormat = 'row';
             elseif strcmp(self.robot.name, 'KUKA_LBR_IV')
                 disp('KUKA LBR IV does not exist in Matlab System Toolbox. The simuluation will be done showing the end effector position only.');
-                self.robot_model = importrobot('iiwa7.urdf');
-                self.robot_model.DataFormat = 'row';
+                %self.robot_model = importrobot('iiwa7.urdf');
+                %self.robot_model.DataFormat = 'row';
             end
 
             self.joint_positions = sim.joint_positions; 
@@ -32,14 +32,14 @@ classdef MATLAB_simulation
             if ~isnan(sim.joint_positions)
                 self.run_3D_simulation();
             else
-                disp('Cannot run 3D simulation because joint position is NaN.')
+                disp('Cannot run 3D simulation because joints position vector is NaN.')
                 return;
             end
             
             if ~isnan(sim.directional_error)
                 self.plot_directional_error();
             else
-                disp('Cannot plot directional error because is NaN.')
+                disp('Cannot plot directional error vector because is NaN.')
                 return;
             end
 
@@ -75,10 +75,16 @@ classdef MATLAB_simulation
             time = [0,linspace(t_init,t_final,size(self.joint_positions,2)-1)];
             qInterp = pchip(time,self.joint_positions,linspace(t_init,t_final,num_frames))';
             
-            gripperPosition = zeros(num_frames,3);
+            end_effector_position = zeros(num_frames,3);
             for k = 1:num_frames
-                gripperPosition(k,:) = self.robot.get_ee_position(qInterp(k,:)');
+                end_effector_position(k,:) = self.robot.get_ee_position(qInterp(k,:)');
             end
+
+            elbow_position = zeros(num_frames,3);
+            for k = 1:num_frames
+                elbow_position(k,:) = self.robot.get_elbow_position(qInterp(k,:)');
+            end
+
             
             figure;
             if isobject(robot_arm)
@@ -97,11 +103,13 @@ classdef MATLAB_simulation
             plot3(points_x, points_y, points_z, '-square', 'Color', 'r');
             hold on
         
-            p = plot3(gripperPosition(1,1), gripperPosition(1,2), gripperPosition(1,3), 'Color', 'black');
+            p1 = plot3(end_effector_position(1,1), end_effector_position(1,2), end_effector_position(1,3), 'Color', 'black');            
+            hold on
+            p2 = plot3(elbow_position(1,1), elbow_position(1,2), elbow_position(1,3), 'Color', 'blue');
             hold on
             grid on
             
-            pause(1);
+            pause(10);
             
             for k = 1:size(qInterp,1)
                 if isobject(robot_arm)
@@ -117,9 +125,13 @@ classdef MATLAB_simulation
                     end
                 end
 
-                p.XData(k) = gripperPosition(k,1);
-                p.YData(k) = gripperPosition(k,2);
-                p.ZData(k) = gripperPosition(k,3);
+                p1.XData(k) = end_effector_position(k,1);
+                p1.YData(k) = end_effector_position(k,2);
+                p1.ZData(k) = end_effector_position(k,3);
+
+                p2.XData(k) = elbow_position(k,1);
+                p2.YData(k) = elbow_position(k,2);
+                p2.ZData(k) = elbow_position(k,3);
 
                 waitfor(r);
             end

@@ -23,7 +23,7 @@ bounds_max_position = [2*pi, 2*pi, 2*pi, 2*pi];
 bounds_min_position = -bounds_max_position;
 bounds_position = double([bounds_min_position;bounds_max_position]);
 
-bounds_max_velocity = [2, 2, 4, 4];
+bounds_max_velocity = [2, 1, 4, 4];
 bounds_min_velocity = -bounds_max_velocity;
 bounds_velocity = double([bounds_min_velocity;bounds_max_velocity]);
 
@@ -57,5 +57,5 @@ fprintf('Pseudoinversion solution (minimum norm solution): q_dot_MNS = ');disp(q
 
 %% Apply SNS multitask algorithm
 
-q_dot_SNS = SNS_velocity_multitask(n, {length(x_dot_1)}, {J_1}, {x_dot_1}, bounds, q_0, simulation_step, false);
+q_dot_SNS = SNS_velocity_multitask(n, {length(x_dot_1)}, {J_1}, {x_dot_1}, bounds, q_0, simulation_step, true);
 fprintf('Saturation in Null Space solution:                q_dot_SNS = ');disp(round(q_dot_SNS', 3));
