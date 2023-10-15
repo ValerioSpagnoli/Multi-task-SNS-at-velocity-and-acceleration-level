@@ -315,7 +315,7 @@ classdef Simulation
         
                 % SNS solution
                 %q_ddot_new = SNS_acceleration_multitask_new(ndof, {m1}, {J1_h}, {J1_dot_h}, {x1_ddot_d_h}, bounds, q_h, q_dot_h, T, self.round_point, false);                                
-                q_ddot_new = SNS_acceleration_multitask_new(ndof, {m1, m2}, {J1_h, J2_h}, {J1_dot_h, J2_dot_h}, {x1_ddot_d_h, q_ddot_cs}, bounds, q_h, q_dot_h, T, self.round_up, self.round_point, false);                                
+                q_ddot_new = SNS_acceleration_multitask(ndof, {m1, m2}, {J1_h, J2_h}, {J1_dot_h, J2_dot_h}, {x1_ddot_d_h, q_ddot_cs}, bounds, q_h, q_dot_h, T, self.round_up, self.round_point, false);                                
                 % q_ddot_new = SNS_acceleration_multitask(ndof, {m1, m3}, {J1_h, J3_h}, {J1_dot_h, J3_dot_h}, {x1_ddot_d_h, x3_ddot_d_h}, bounds, q_h, q_dot_h, T, self.round_point, false);                                
                 q_dot_new = q_dot_h + q_ddot_new*T;
                 q_new = q_h + q_dot_h*T + 0.5*q_ddot_new*T^2;

@@ -1,6 +1,6 @@
-function q_ddot_SNS = SNS_acceleration_multitask(n, m, J, J_dot, task_ddot, bounds, q, q_dot, T, round_point, verbose)
+function q_ddot_SNS = SNS_acceleration_multitask(n, m, J, J_dot, task_ddot, bounds, q, q_dot, T, round_up, round_point, verbose)
     
-    [bounds_Q_ddot_min, bounds_Q_ddot_max] = shaping_joint_acceleration_bounds(n, bounds, q, q_dot, T, round_point);
+    [bounds_Q_ddot_min, bounds_Q_ddot_max] = shaping_joint_acceleration_bounds(n, bounds, q, q_dot, T, round_up, round_point);
 
     l = length(m);
 
@@ -11,7 +11,7 @@ function q_ddot_SNS = SNS_acceleration_multitask(n, m, J, J_dot, task_ddot, boun
 
     saturated_joints = zeros(1,n);
         
-    for k=1:l        
+    for k=1:l
 
         if verbose
         fprintf('##########################################################\n')
@@ -23,43 +23,53 @@ function q_ddot_SNS = SNS_acceleration_multitask(n, m, J, J_dot, task_ddot, boun
             P_km1 = P_0;
             q_ddot_bar_km1 = q_ddot_bar_0;
         else
+            if round_up
             P_km1 = round( P{k-1} ,round_point);
-            q_ddot_bar_km1 = round( q_ddot_bar{k-1} ,round_point);            
-        end     
+            q_ddot_bar_km1 = round( q_ddot_bar{k-1} ,round_point);
+            else
+            P_km1 = P{k-1};
+            q_ddot_bar_km1 = q_ddot_bar{k-1};
+            end
+        end 
         P_bar_k = P_km1;
         
+        if round_up
         J_k = round( J{k}, round_point);        
         J_dot_k = round( J_dot{k}, round_point);        
-        task_ddot_k = round( task_ddot{k}, round_point);        
+        task_ddot_k = round( task_ddot{k}, round_point);    
+        else
+        J_k = J{k};
+        J_dot_k = J_dot{k};
+        task_ddot_k = task_ddot{k};    
+        end
+
         m_k = m{k};
 
-        if m_k < n
-            [q_ddot_bar_k, saturated_joints] = algorithm_3(n, m_k, task_ddot_k, J_k, J_dot_k, q_ddot_bar_km1, P_km1, q_dot, bounds_Q_ddot_min, bounds_Q_ddot_max, saturated_joints, round_point, verbose);
+        if m_k < n            
+            [q_ddot_bar_k, saturated_joints] = algorithm_3(n, m_k, task_ddot_k, J_k, J_dot_k, q_ddot_bar_km1, P_km1, q_dot, bounds_Q_ddot_min, bounds_Q_ddot_max, saturated_joints, round_up, round_point, verbose);            
         else            
-            q_ddot_bar_k = algorithm_4(n, task_ddot_k, q_ddot_bar_km1, P_km1, bounds_Q_ddot_min, bounds_Q_ddot_max, saturated_joints, round_point, verbose);
-        end
+            q_ddot_bar_k = algorithm_4(n, task_ddot_k, q_ddot_bar_km1, P_km1, bounds_Q_ddot_min, bounds_Q_ddot_max, saturated_joints, round_up, round_point, verbose);
+        end              
 
-        if verbose
-        fprintf('task number = %d -- saturated_joints = ',k);disp(saturated_joints);
-        end
+        q_ddot_bar{length(q_ddot_bar)+1} = q_ddot_bar_k;
         
-        q_ddot_bar{length(q_ddot_bar)+1} = q_ddot_bar_k; 
+        if round_up
+        P_k = round( P_km1 - pinv(J_k*P_km1) * (J_k*P_km1) ,4);
+        else            
+        P_k = P_km1 - pinv(J_k*P_km1) * (J_k*P_km1);
+        end
 
-        P_k = round( P_km1 - pinv(J_k*P_km1)*(J_k*P_km1) ,round_point);
-        % for j=1:n
-        %     if saturated_joints(j)==1
-        %         P_k(j,:)=0;
-        %         P_k(:,j)=0;                
-        %     end
-        % end
         P{length(P)+1} = P_k;
         
     end
+    
     q_ddot_SNS = q_ddot_bar_k;
 end
 
 
-function [q_ddot_bar_k, saturated_joints] = algorithm_3(n, m_k, x_ddot_k, J_k, J_dot_k, q_ddot_bar_km1, P_km1, q_dot, bounds_Q_ddot_min, bounds_Q_ddot_max, saturated_joints, round_point, verbose)
+
+% SNS Algorithm 3
+function [q_ddot_bar_k, saturated_joints] = algorithm_3(n, m_k, x_ddot_k, J_k, J_dot_k, q_ddot_bar_km1, P_km1, q_dot, bounds_Q_ddot_min, bounds_Q_ddot_max, saturated_joints, round_up, round_point, verbose)
     W_star_k = eye(n);
     P_bar_star_k = eye(n);
     q_ddot_star_N_k = zeros(n,1);
@@ -84,29 +94,49 @@ function [q_ddot_bar_k, saturated_joints] = algorithm_3(n, m_k, x_ddot_k, J_k, J
         if verbose
         fprintf('**********************************************************\n')
         fprintf('while loop %d\n\n', while_loop);   
+
         end
 
         limit_exceeded = false;
-               
-        pinv_ImW_x_Pkm1 = round( pinv((eye(n)-W_k)*P_km1) ,round_point);        
+        
+        if round_up
+
+        pinv_ImW_x_Pkm1 = round( pinv((eye(n)-W_k)*P_km1) , round_point);
         for j = 1:n
             if saturated_joints(j) == 1
                 pinv_ImW_x_Pkm1(j,j) = 1;
             end
         end
-        q_ddot_bar_N_k = round( pinv_ImW_x_Pkm1 * q_ddot_N_k ,round_point);        
-
-        q_ddot_tilde_k = round( q_ddot_bar_km1 + q_ddot_bar_N_k ,round_point);        
-
-        pinv_Jk_x_Pbark = round( pinv(J_k*P_bar_k) ,round_point);        
+        q_ddot_bar_N_k = round( pinv_ImW_x_Pkm1 * q_ddot_N_k ,round_point);
+        q_ddot_tilde_k = round( q_ddot_bar_km1 + q_ddot_bar_N_k ,round_point);
+        pinv_Jk_x_Pbark = round( pinv(J_k*P_bar_k) ,round_point);
         for j = 1:n
             if saturated_joints(j) == 1
                 pinv_Jk_x_Pbark(j,:) = 0;
             end
         end
-
-        q_ddot_bar_k = round( q_ddot_tilde_k + pinv_Jk_x_Pbark*(s_k*x_ddot_k - J_dot_k*q_dot - J_k*q_ddot_tilde_k) ,round_point);        
+        q_ddot_bar_k = round( q_ddot_tilde_k + pinv_Jk_x_Pbark*(s_k*x_ddot_k - J_dot_k*q_dot - J_k*q_ddot_tilde_k) ,round_point);
         
+        else
+        
+        pinv_ImW_x_Pkm1 = pinv((eye(n)-W_k)*P_km1);
+        for j = 1:n
+            if saturated_joints(j) == 1
+                pinv_ImW_x_Pkm1(j,j) = 1;
+            end
+        end
+        q_ddot_bar_N_k = pinv_ImW_x_Pkm1 * q_ddot_N_k;
+        q_ddot_tilde_k = q_ddot_bar_km1 + q_ddot_bar_N_k;
+        pinv_Jk_x_Pbark = pinv(J_k*P_bar_k);
+        for j = 1:n
+            if saturated_joints(j) == 1
+                pinv_Jk_x_Pbark(j,:) = 0;
+            end
+        end
+        q_ddot_bar_k = q_ddot_tilde_k + pinv_Jk_x_Pbark*(s_k*x_ddot_k - J_dot_k*q_dot - J_k*q_ddot_tilde_k);
+
+        end
+
         if verbose
         fprintf('s_k = ');disp(s_k);
         fprintf('x_ddot_k = ');disp(x_ddot_k');
@@ -127,7 +157,7 @@ function [q_ddot_bar_k, saturated_joints] = algorithm_3(n, m_k, x_ddot_k, J_k, J
         fprintf('J_k*q_ddot_tilde_k = ');disp((J_k*q_ddot_tilde_k)');
         fprintf('pinv(J_k*P_bar_k)*(s_k*x_ddot_k - J_dot_k*q_dot - J_k*q_ddot_tilde_k) = ');disp((pinv_Jk_x_Pbark*(s_k*x_ddot_k - J_dot_k*q_dot - J_k*q_ddot_tilde_k))');
         fprintf('\n');
-        fprintf('q_ddot_bar_k   = ');disp(q_ddot_bar_k');        
+        fprintf('q_ddot_bar_k   = ');disp(q_ddot_bar_k');           
         end
     
         % check if q_ddot_bar_k has at least one component out of bounds
@@ -151,8 +181,15 @@ function [q_ddot_bar_k, saturated_joints] = algorithm_3(n, m_k, x_ddot_k, J_k, J
             fprintf('limit_exceeded: %d\n\n', limit_exceeded);                
             end
 
-            a = round( pinv_Jk_x_Pbark * x_ddot_k ,round_point);            
-            b = round( q_ddot_bar_k - a ,round_point);
+            if round_up
+            a = round( pinv_Jk_x_Pbark * x_ddot_k ,round_point);
+            % b = round( q_ddot_bar_k - a ,round_point);                        
+            b = round( q_ddot_tilde_k - pinv_Jk_x_Pbark * J_dot_k * q_dot - pinv_Jk_x_Pbark * J_k * q_ddot_tilde_k ,round_point);                        
+            else
+            a = pinv_Jk_x_Pbark * x_ddot_k;
+            % b = q_ddot_bar_k - a;
+            b = q_ddot_tilde_k - pinv_Jk_x_Pbark * J_dot_k * q_dot - pinv_Jk_x_Pbark * J_k * q_ddot_tilde_k;
+            end
             
             if verbose
             fprintf('a = ');disp(a')
@@ -160,16 +197,14 @@ function [q_ddot_bar_k, saturated_joints] = algorithm_3(n, m_k, x_ddot_k, J_k, J
             end
 
             % compute the task scaling factor and the most critical joint
-            [task_scaling_factor, most_critical_joint] = getTaskScalingFactor(n, a, b, bounds_Q_ddot_min, bounds_Q_ddot_max, round_point, verbose);             
-            % [task_scaling_factor, most_critical_joint] = getTaskScalingFactor(n, q_ddot_bar_k, q_ddot_bar_km1, saturated_joints, bounds_Q_ddot_min, bounds_Q_ddot_max, round_point, verbose);             
+            [task_scaling_factor, most_critical_joint] = getTaskScalingFactor(n, a, b, bounds_Q_ddot_min, bounds_Q_ddot_max, round_up, round_point, verbose);             
 
             if verbose                
             fprintf('..........................................................\n')
             fprintf('task_scaling_factor: %f\n', task_scaling_factor);
-            fprintf('most_critical_joint: %d\n', most_critical_joint);            
+            fprintf('most_critical_joint: %d\n', most_critical_joint);
             fprintf('..........................................................\n')
             end
-
 
             % if the computed task scaling factor is greater than the
             % current best task scaling factor, save the current
@@ -188,31 +223,29 @@ function [q_ddot_bar_k, saturated_joints] = algorithm_3(n, m_k, x_ddot_k, J_k, J
                 fprintf('    W_star_k = \n');disp(W_star_k);
                 fprintf('    P_bar_star_k = \n');disp(P_bar_star_k);
                 fprintf('    s_stark_k = ');disp(s_star_k);
-                fprintf('    q_dot_star_N_k = ');disp(q_ddot_star_N_k');
+                fprintf('    q_ddot_star_N_k = ');disp(q_ddot_star_N_k');
                 fprintf('    saturated_joints_star = ');disp(saturated_joints_star);
                 fprintf('..........................................................\n')
-                end      
+                end    
             end
 
             j = most_critical_joint;
             saturated_joints(j) = 1;
-            
+
             % saturate the most critical joint
             W_k(j,j) = 0;
             if q_ddot_bar_k(j) > bounds_Q_ddot_max(j)
                 q_ddot_N_k(j) = bounds_Q_ddot_max(j)-q_ddot_bar_km1(j);
             elseif q_ddot_bar_k(j) < bounds_Q_ddot_min(j)
                 q_ddot_N_k(j) = bounds_Q_ddot_min(j)-q_ddot_bar_km1(j);
+            end            
+            
+            if round_up
+            P_bar_k = round( (eye(n) - pinv((eye(n)-W_k)*P_km1))*P_km1 ,round_point);
+            else
+            P_bar_k = (eye(n) - pinv((eye(n)-W_k)*P_km1))*P_km1;
             end
 
-            P_bar_k = round( (eye(n) - pinv((eye(n)-W_k)*P_km1))*P_km1 ,round_point);
-            % for j=1:n
-            %     if saturated_joints(j) == 1
-            %         P_bar_k(j,:) = 0;
-            %         P_bar_k(:,j) = 0;                    
-            %     end
-            % end
-               
             if verbose
             fprintf('..........................................................\n')
             fprintf('recomputing stuff for most critical joint:\n');
@@ -225,48 +258,57 @@ function [q_ddot_bar_k, saturated_joints] = algorithm_3(n, m_k, x_ddot_k, J_k, J
             fprintf('..........................................................\n')
             end
 
-
+            
             % if the rank of J_k*P_bar_k is smaller than the dimension
             % of the current task (m_k), scale the remanining
             % components out of bounds using the best scaling factor
             % found so far
             if rank(J_k*P_bar_k) < m_k
                 s_k = s_star_k;
-                most_critical_joint = most_critical_joint_star;
+                most_critial_joint = most_critical_joint_star;
                 W_k = W_star_k;
-                q_ddot_N_k = q_ddot_star_N_k;
                 P_bar_k = P_bar_star_k;
-                saturated_joints = saturated_joints_star;
+                q_ddot_N_k = q_ddot_star_N_k;
+                saturated_joints = saturated_joints_star;             
 
-                pinv_ImW_x_Pkm1 = round( pinv((eye(n)-W_k)*P_km1) ,round_point);                
+                if round_up
+
+                pinv_ImW_x_Pkm1 = round( pinv((eye(n)-W_k)*P_km1) , round_point);
                 for j = 1:n
                     if saturated_joints(j) == 1
                         pinv_ImW_x_Pkm1(j,j) = 1;
                     end
                 end
-                q_ddot_bar_N_k = round( pinv_ImW_x_Pkm1 * q_ddot_N_k ,round_point);       
-
-                % P_bar_k = round( (eye(n) - pinv((eye(n)-W_k)*P_km1))*P_km1 ,round_point);
-                % for j=1:n
-                %     if saturated_joints(j) == 1                       
-                %         P_bar_k(j,:) = 0;
-                %         P_bar_k(:,j) = 0;                        
-                %     end
-                % end
-
-                q_ddot_tilde_k = round( q_ddot_bar_km1 + q_ddot_bar_N_k ,round_point);                
-                
-                pinv_Jk_x_Pbark = round( pinv(J_k*P_bar_k) ,round_point);                
+                q_ddot_bar_N_k = round( pinv_ImW_x_Pkm1 * q_ddot_N_k ,round_point);
+                q_ddot_tilde_k = round( q_ddot_bar_km1 + q_ddot_bar_N_k ,round_point);               
+                pinv_Jk_x_Pbark = round( pinv(J_k*P_bar_k) ,round_point);
                 for j = 1:n
                     if saturated_joints(j) == 1
                         pinv_Jk_x_Pbark(j,:) = 0;
                     end
                 end
-                q_ddot_bar_k = round( q_ddot_tilde_k + pinv_Jk_x_Pbark*(s_k*x_ddot_k - J_dot_k*q_dot - J_k*q_ddot_tilde_k) ,round_point);                
+                q_ddot_bar_k = round( q_ddot_tilde_k + pinv_Jk_x_Pbark*(s_k*x_ddot_k - J_dot_k*q_dot - J_k*q_ddot_tilde_k) ,round_point);
+                
+                else
 
-                if most_critical_joint ~= -1
-                    saturated_joints(most_critical_joint) = 1;
+                pinv_ImW_x_Pkm1 = pinv((eye(n)-W_k)*P_km1);
+                for j = 1:n
+                    if saturated_joints(j) == 1
+                        pinv_ImW_x_Pkm1(j,j) = 1;
+                    end
                 end
+                q_ddot_bar_N_k = pinv_ImW_x_Pkm1 * q_ddot_N_k;
+                q_ddot_tilde_k = q_ddot_bar_km1 + q_ddot_bar_N_k;
+                pinv_Jk_x_Pbark = pinv(J_k*P_bar_k);
+                for j = 1:n
+                    if saturated_joints(j) == 1
+                        pinv_Jk_x_Pbark(j,:) = 0;
+                    end
+                end
+                q_ddot_bar_k = q_ddot_tilde_k + pinv_Jk_x_Pbark*(s_k*x_ddot_k - J_dot_k*q_dot - J_k*q_ddot_tilde_k);
+
+                end
+
                 limit_exceeded = false;   
 
                 if verbose
@@ -303,46 +345,36 @@ function [q_ddot_bar_k, saturated_joints] = algorithm_3(n, m_k, x_ddot_k, J_k, J
             end
 
         end
-
         if verbose
         fprintf('**********************************************************\n')
         end
         while_loop = while_loop+1;
-
     end
-
 end
 
 
-function q_ddot_bar_k = algorithm_4(n, q_ddot_cs, q_ddot_bar_km1, P_km1, bounds_Q_ddot_min, bounds_Q_ddot_max, saturated_joints, round_point, verbose)
 
-    if verbose
-        fprintf('P_bar_k = P_km1 = \n');disp(P_km1);
-        fprintf('q_ddot_bar_km1 = ');disp(q_ddot_bar_km1');
-    end
+% SNS Algorithm 4
+function q_ddot_bar_k = algorithm_4(n, q_ddot_cs, q_ddot_bar_km1, P_km1, bounds_Q_ddot_min, bounds_Q_ddot_max, saturated_joints, round_up, round_point, verbose)
 
     W_cs = eye(n);
 
-%     for i=1:n
-%         if q_ddot_bar_km1(i) == bounds_Q_ddot_min(i) || q_ddot_bar_km1(i) == bounds_Q_ddot_max(i)
-%             W_cs(i,i) = 0;
-%         end
-%     end
-
     for j=1:n
-        if saturated_joints(j)==1
+        if q_ddot_bar_km1(j) == bounds_Q_ddot_min(j) || q_ddot_bar_km1(j) == bounds_Q_ddot_max(j)
             W_cs(j,j) = 0;
         end
     end
-
-    P_bar_cs = (eye(n) - pinv((eye(n)-W_cs)*P_km1))*P_km1;    
+    
+    P_bar_cs = (eye(n) - pinv((eye(n)-W_cs)*P_km1))*P_km1;
+   
     a = P_bar_cs*q_ddot_cs;
     b = q_ddot_bar_km1;
 
-    [task_scaling_factor, most_critical_joint] = getTaskScalingFactor(n, a, b, bounds_Q_ddot_min, bounds_Q_ddot_max, round_point, verbose);    
+    [task_scaling_factor, most_critical_joint] = getTaskScalingFactor(n, a, b, bounds_Q_ddot_min, bounds_Q_ddot_max, round_up, round_point, verbose);    
     s_cs = task_scaling_factor;
     q_ddot_bar_k = q_ddot_bar_km1 + s_cs*P_bar_cs*q_ddot_cs;   
 end
+
 
 
 % function [task_scaling_factor, most_critical_joint] = getTaskScalingFactor(n, q_ddot_bar_k, q_ddot_bar_km1, saturated_joints, bounds_min, bounds_max, round_point, verbose)
@@ -400,17 +432,22 @@ end
 % end
 
 
-% SNS Algorithm 2
-function [task_scaling_factor, most_critical_joint] = getTaskScalingFactor(n, a, b, bounds_min, bounds_max, round_point, verbose)
+
+function [task_scaling_factor, most_critical_joint] = getTaskScalingFactor(n, a, b, bounds_min, bounds_max, round_up, round_point, verbose)
 
     S_min = zeros(1,n);
     S_max = zeros(1,n);
     
     for i=1:n
 
+        if round_up
         Smin = round( (bounds_min(i)-b(i))/a(i) ,round_point);
         Smax = round( (bounds_max(i)-b(i))/a(i) ,round_point);   
-  
+        else
+        Smin = (bounds_min(i)-b(i))/a(i);
+        Smax = (bounds_max(i)-b(i))/a(i);
+        end
+
         if isinf(Smax) || isnan(Smax)
             Smax = +Inf;
         end
@@ -451,14 +488,15 @@ function [task_scaling_factor, most_critical_joint] = getTaskScalingFactor(n, a,
 
     if s_min > s_max || s_max < 0 || s_min > 1
         task_scaling_factor = 0;
-    else        
+    else
         task_scaling_factor = min([s_max,1]);
     end
 end
 
 
+
 % shaping joint acceleration bounds
-function [bounds_Q_ddot_min, bounds_Q_ddot_max] = shaping_joint_acceleration_bounds(n, bounds, q, q_dot, T, round_point)
+function [bounds_Q_ddot_min, bounds_Q_ddot_max] = shaping_joint_acceleration_bounds(n, bounds, q, q_dot, T, round_up, round_point)
 
     bounds_min_position = bounds{1}(1,:);
     bounds_max_position = bounds{1}(2,:);
@@ -473,6 +511,8 @@ function [bounds_Q_ddot_min, bounds_Q_ddot_max] = shaping_joint_acceleration_bou
     bounds_Q_ddot_max = zeros(7,1);
     for i=1:n
 
+        if round_up
+        
         bounds_Q_ddot_min_1 = round( (2*(bounds_min_position(i)-q(i)-q_dot(i)*T))/T^2 ,round_point);
         bounds_Q_ddot_min_2 = round( -(bounds_max_velocity(i)+q_dot(i))/T ,round_point);
         bounds_Q_ddot_min_3 = round( -bounds_max_acceleration(i) ,round_point);
@@ -484,6 +524,23 @@ function [bounds_Q_ddot_min, bounds_Q_ddot_max] = shaping_joint_acceleration_bou
         bounds_Q_ddot_max_2 = round( (bounds_max_velocity(i)-q_dot(i))/T ,round_point);
         bounds_Q_ddot_max_3 = round( bounds_max_acceleration(i) ,round_point);
 
-        bounds_Q_ddot_max(i) = min([bounds_Q_ddot_max_1, bounds_Q_ddot_max_2, bounds_Q_ddot_max_3]);                     
+        bounds_Q_ddot_max(i) = min([bounds_Q_ddot_max_1, bounds_Q_ddot_max_2, bounds_Q_ddot_max_3]);     
+
+        else
+        
+        bounds_Q_ddot_min_1 = (2*(bounds_min_position(i)-q(i)-q_dot(i)*T))/T^2;
+        bounds_Q_ddot_min_2 = -(bounds_max_velocity(i)+q_dot(i))/T;
+        bounds_Q_ddot_min_3 = -bounds_max_acceleration(i);
+
+        bounds_Q_ddot_min(i) = max([bounds_Q_ddot_min_1, bounds_Q_ddot_min_2, bounds_Q_ddot_min_3]);
+
+
+        bounds_Q_ddot_max_1 = (2*(bounds_max_position(i)-q(i)-q_dot(i)*T))/T^2;
+        bounds_Q_ddot_max_2 = (bounds_max_velocity(i)-q_dot(i))/T;
+        bounds_Q_ddot_max_3 = bounds_max_acceleration(i);
+
+        bounds_Q_ddot_max(i) = min([bounds_Q_ddot_max_1, bounds_Q_ddot_max_2, bounds_Q_ddot_max_3]);  
+        
+        end
     end
 end
