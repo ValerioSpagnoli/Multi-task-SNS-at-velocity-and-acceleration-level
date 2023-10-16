@@ -2,14 +2,15 @@ classdef MATLAB_simulation
     properties
         robot
         robot_model
-        joint_positions
-        directional_error
+        joints_positions
+        directional_errors
+        elbow_positions
+        elbow_velocities
         T 
         points
     end
 
-    methods
-        % function self = MATLAB_simulation(robot, joint_positions, directional_error, simulation_step, points)
+    methods        
         function self = MATLAB_simulation(sim)
             
             clear figure;
@@ -24,22 +25,31 @@ classdef MATLAB_simulation
                 %self.robot_model.DataFormat = 'row';
             end
 
-            self.joint_positions = sim.joint_positions; 
-            self.directional_error = sim.directional_error;
+            self.joints_positions = sim.joints_positions; 
+            self.directional_errors = sim.directional_errors;
+            self.elbow_positions = sim.elbow_positions; 
+            self.elbow_velocities = sim.elbow_velocities;
             self.T = sim.simulation_step;
             self.points = sim.path;
             
-            if ~isnan(sim.joint_positions)
+            if ~isnan(sim.joints_positions)
                 self.run_3D_simulation();
             else
                 disp('Cannot run 3D simulation because joints position vector is NaN.')
                 return;
             end
             
-            if ~isnan(sim.directional_error)
+            if ~isnan(sim.directional_errors)
                 self.plot_directional_error();
             else
                 disp('Cannot plot directional error vector because is NaN.')
+                return;
+            end
+
+            if ~isnan(sim.elbow_velocities)
+                self.plot_elbow_velocities();
+            else
+                disp('Cannot plot elbow velocities vector because is NaN.')
                 return;
             end
 
@@ -72,8 +82,8 @@ classdef MATLAB_simulation
             t_final = 10000*self.T;
             num_frames = t_final*framerate;
             
-            time = [0,linspace(t_init,t_final,size(self.joint_positions,2)-1)];
-            qInterp = pchip(time,self.joint_positions,linspace(t_init,t_final,num_frames))';
+            time = [0,linspace(t_init,t_final,size(self.joints_positions,2)-1)];
+            qInterp = pchip(time,self.joints_positions,linspace(t_init,t_final,num_frames))';
             
             end_effector_position = zeros(num_frames,3);
             for k = 1:num_frames
@@ -88,7 +98,7 @@ classdef MATLAB_simulation
             
             figure;
             if isobject(robot_arm)
-                show(robot_arm, self.joint_positions(:,1)', 'PreservePlot', false);
+                show(robot_arm, self.joints_positions(:,1)', 'PreservePlot', false);
                 hold on
             end
 
@@ -141,16 +151,31 @@ classdef MATLAB_simulation
         %% Plot directional error
         function plot_directional_error(self)
             t_init = 0.001;
-            t_final = length(self.directional_error)/1000;
-            time = [0,linspace(t_init,t_final,size(self.directional_error,2)-1)];
+            t_final = length(self.directional_errors)/1000;
+            time = [0,linspace(t_init,t_final,size(self.directional_errors,2)-1)];
 
             figure;
-            plot(time, self.directional_error);
+            plot(time, self.directional_errors);
             grid on
             hold on
-            title('Directional error');
+            title('Directional errors');
             xlabel('Time [s]');
-            ylabel('Directional error [rad]');
+            ylabel('Directional errors [rad]');
+        end
+        
+        %% Plot elbow velocies
+        function plot_elbow_velocities(self)
+            t_init = 0.001;
+            t_final = length(self.elbow_velocities)/1000;
+            time = [0,linspace(t_init,t_final,size(self.elbow_velocities,2)-1)];
+
+            figure;
+            plot(time, self.elbow_velocities);
+            grid on
+            hold on
+            title('Elbow velocities');
+            xlabel('Time [s]');
+            ylabel('Elbow velocities [rad/s]');
         end
     end
 end
