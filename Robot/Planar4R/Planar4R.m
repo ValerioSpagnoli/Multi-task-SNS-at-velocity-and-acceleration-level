@@ -1,7 +1,7 @@
 classdef Planar4R
     properties
         % number of degrees of freedom of robot
-        ndof
+        n
         t
 
         % symbolic variables vector
@@ -10,9 +10,9 @@ classdef Planar4R
         q_ddot
         
         % symbolic end effector position
-        link_1
-        link_2
-        link_3
+        link_1_position
+        link_2_position
+        link_3_position
         ee_position
 
         % simbolic jacobian matrices for end effector
@@ -38,9 +38,9 @@ classdef Planar4R
         q_dot_0
         q_ddot_0
 
-        link_1_0
-        link_2_0
-        link_3_0
+        link_1_position_0
+        link_2_position_0
+        link_3_position_0
         ee_position_0        
 
         % name of robot
@@ -50,7 +50,7 @@ classdef Planar4R
     methods
         %% constructur
         function self = Planar4R(q_0, q_dot_0, q_ddot_0)
-            self.ndof = 4;
+            self.n = 4;
 
             % define symbolic variables
             syms t 
@@ -77,8 +77,8 @@ classdef Planar4R
 
             
             %% homogeneus matrices
-            T = {1,self.ndof};
-            for i=1:self.ndof
+            T = {1,self.n};
+            for i=1:self.n
                 alpha_i = DH_matrix(i,1);
                 d_i = DH_matrix(i,2);
                 a_i = DH_matrix(i,3);
@@ -94,30 +94,30 @@ classdef Planar4R
 
             %% link_1 position
             T_0_1 = T{1};
-            self.link_1 = T_0_1(1:3, 4);
+            self.link_1_position = T_0_1(1:3, 4);
 
             % symbolic robot jacobian for end effector: J_ee
-            self.J_link_1 = simplify(jacobian(self.link_1, self.q));
+            self.J_link_1 = simplify(jacobian(self.link_1_position, self.q));
 
             % symbolic derivate of robot jacobian for end effector: J_dot_ee
             self.J_dot_link_1 = subs(simplify(diff(self.J_link_1, t)), {diff(q_1), diff(q_2), diff(q_3), diff(q_4)}, {str2sym('q_dot_1(t)'), str2sym('q_dot_2(t)'), str2sym('q_dot_3(t)'), str2sym('q_dot_4(t)')});
 
             %% link_2 position
             T_0_2 = T{1}*T{2};
-            self.link_2 = T_0_2(1:3, 4);
+            self.link_2_position = T_0_2(1:3, 4);
 
             % symbolic robot jacobian for end effector: J_ee
-            self.J_link_2 = simplify(jacobian(self.link_2, self.q));
+            self.J_link_2 = simplify(jacobian(self.link_2_position, self.q));
 
             % symbolic derivate of robot jacobian for end effector: J_dot_ee
             self.J_dot_link_2 = subs(simplify(diff(self.J_link_2, t)), {diff(q_1), diff(q_2), diff(q_3), diff(q_4)}, {str2sym('q_dot_1(t)'), str2sym('q_dot_2(t)'), str2sym('q_dot_3(t)'), str2sym('q_dot_4(t)')});
 
             %% link_3 position
             T_0_3 = T{1}*T{2}*T{3};
-            self.link_3 = T_0_3(1:3, 4);
+            self.link_3_position = T_0_3(1:3, 4);
 
             % symbolic robot jacobian for end effector: J_ee
-            self.J_link_3 = simplify(jacobian(self.link_3, self.q));
+            self.J_link_3 = simplify(jacobian(self.link_3_position, self.q));
 
             % symbolic derivate of robot jacobian for end effector: J_dot_ee
             self.J_dot_link_3 = subs(simplify(diff(self.J_link_3, t)), {diff(q_1), diff(q_2), diff(q_3), diff(q_4)}, {str2sym('q_dot_1(t)'), str2sym('q_dot_2(t)'), str2sym('q_dot_3(t)'), str2sym('q_dot_4(t)')});
@@ -150,9 +150,9 @@ classdef Planar4R
             self.q_dot_0 = double(q_dot_0);
             self.q_ddot_0 = double(q_ddot_0);
 
-            self.link_1_0 = double(subs(self.link_1, self.q, self.q_0));
-            self.link_2_0 = double(subs(self.link_2, self.q, self.q_0));
-            self.link_3_0 = double(subs(self.link_3, self.q, self.q_0));            
+            self.link_1_position_0 = double(subs(self.link_1_position, self.q, self.q_0));
+            self.link_2_position_0 = double(subs(self.link_2_position, self.q, self.q_0));
+            self.link_3_position_0 = double(subs(self.link_3_position, self.q, self.q_0));            
             self.ee_position_0 = double(subs(self.ee_position, self.q, self.q_0));
         end
 
@@ -165,8 +165,8 @@ classdef Planar4R
             J_dot = double(subs(self.J_dot_link_1, [self.q, self.q_dot], [q, q_dot]));
         end
 
-        function link_1 = get_link_1(self, q)
-            link_1 = double(subs(self.link_1, self.q, q));
+        function link_1 = get_link_1_position(self, q)
+            link_1 = double(subs(self.link_1_position, self.q, q));
         end
 
         %% get Jacobians link_2: J, J_dot
@@ -178,8 +178,8 @@ classdef Planar4R
             J_dot = double(subs(self.J_dot_link_2, [self.q, self.q_dot], [q, q_dot]));
         end
 
-        function link_2 = get_link_2(self, q)
-            link_2 = double(subs(self.link_2, self.q, q));
+        function link_2 = get_link_2_position(self, q)
+            link_2 = double(subs(self.link_2_position, self.q, q));
         end
 
         %% get Jacobians link_3: J, J_dot
@@ -191,8 +191,8 @@ classdef Planar4R
             J_dot = double(subs(self.J_dot_link_3, [self.q, self.q_dot], [q, q_dot]));
         end
 
-        function link_3 = get_link_3(self, q)
-            link_3 = double(subs(self.link_3, self.q, q));
+        function link_3 = get_link_3_position(self, q)
+            link_3 = double(subs(self.link_3_position, self.q, q));
         end
 
         %% getters end effectors: ee_position, J, J_dot
