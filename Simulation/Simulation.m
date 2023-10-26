@@ -27,6 +27,10 @@ classdef Simulation
         % simulation_step: time step of simulation
         function self = Simulation(level, robot_name, q_0, q_dot_0, q_ddot_0, simulation_step, epsilon, round_up, round_point)
 
+            format short
+
+            % load robot
+
             % check parameters
             if isnan(level)
                 self.level = 'velocity';
@@ -43,17 +47,31 @@ classdef Simulation
                     self.q_0 = [0; pi/4; -pi/4; pi/4; 0; 0; 0];
                 elseif strcmp(self.robot_name, 'KUKA_LBR_IV')
                     self.q_0 = [0; pi/4; pi/4; pi/4; 0; 0; 0];
+                elseif strcmp(self.robot_name, 'Planar4R')
+                    self.q_0 = [0; pi/2; -pi/2; pi/2;];
                 end
             else
                 self.q_0 = q_0;
             end
-            if isnan(q_dot_0)
-                self.q_dot_0 = zeros(7,1);
+            if isnan(q_dot_0)                
+                if strcmp(self.robot_name, 'KUKA_LBR_IIWA_7_R800')
+                    self.q_dot_0 = zeros(7,1);
+                elseif strcmp(self.robot_name, 'KUKA_LBR_IV')
+                    self.q_dot_0 = zeros(7,1);
+                elseif strcmp(self.robot_name, 'Planar4R')
+                    self.q_dot_0 = zeros(4,1);
+                end
             else
                 self.q_dot_0 = q_dot_0;    
             end
             if isnan(q_ddot_0)
-                self.q_ddot_0 = zeros(7,1);
+                if strcmp(self.robot_name, 'KUKA_LBR_IIWA_7_R800')
+                    self.q_ddot_0 = zeros(7,1);
+                elseif strcmp(self.robot_name, 'KUKA_LBR_IV')
+                    self.q_ddot_0 = zeros(7,1);
+                elseif strcmp(self.robot_name, 'Planar4R')
+                    self.q_ddot_0 = zeros(4,1);
+                end
             else
                 self.q_ddot_0 = q_ddot_0;
             end
@@ -77,15 +95,18 @@ classdef Simulation
             else
                 self.round_point = round_point;
             end
-                     
-            % load robot
+
+
             fprintf('Loading robot ... ');
             if strcmp(self.robot_name, 'KUKA_LBR_IIWA_7_R800')
                 self.robot = KUKA_LBR_IIWA7(self.q_0, self.q_dot_0, self.q_ddot_0);
             elseif strcmp(self.robot_name, 'KUKA_LBR_IV')
                 self.robot = KUKA_LBR_IV(self.q_0, self.q_dot_0, self.q_ddot_0);
+            elseif strcmp(self.robot_name, 'Planar4R')
+                self.robot = Planar4R(self.q_0, self.q_dot_0, self.q_ddot_0);
             end
             fprintf('done! Robot: %s\n', robot_name);
+                     
             
             % compute path
             fprintf('Creating path ... ')
@@ -109,21 +130,36 @@ classdef Simulation
 
         % Create hexagonal path
         function path = create_hexagonal_path(self, n_cycle)
-            poly_0 = [[0; 0; 0.2], [0; 0.1732; 0.1], [0; 0.1732; -0.1], [0; 0; -0.2], [0; -0.1732; -0.1], [0; -0.1732; 0.1]];
+            poly_0_space = [[0; 0; 0.2], [0; 0.1732; 0.1], [0; 0.1732; -0.1], [0; 0; -0.2], [0; -0.1732; -0.1], [0; -0.1732; 0.1]];
+            poly_0_plane = [[0; 0.2; 0], [0.1732; 0.1; 0], [0.1732; -0.1; 0], [0; -0.2; 0], [-0.1732; -0.1; 0], [-0.1732; 0.1; 0]];
             
             if strcmp(self.robot_name, 'KUKA_LBR_IIWA_7_R800')
                 center = [0.1; 0.35; 0.8235];
             elseif strcmp(self.robot_name, 'KUKA_LBR_IV')
                 center = [0.1; 0.35; 0.6235];
+            elseif strcmp(self.robot_name, 'Planar4R')
+                center = [0.7; 0; 0];
             end
                         
             points = [];
             for n=1:n_cycle
                 for i=1:6
-                    points = [points, [poly_0(:,i)]];
+                    if strcmp(self.robot_name, 'KUKA_LBR_IIWA_7_R800')
+                        points = [points, [poly_0_space(:,i)]];
+                    elseif strcmp(self.robot_name, 'KUKA_LBR_IV')
+                        points = [points, [poly_0_space(:,i)]];
+                    elseif strcmp(self.robot_name, 'Planar4R')
+                        points = [points, [poly_0_plane(:,i)]];
+                    end
                 end
             end
-            path = [points, poly_0(:,1)]+center;
+            if strcmp(self.robot_name, 'KUKA_LBR_IIWA_7_R800')
+                path = [points, poly_0_space(:,1)]+center;
+            elseif strcmp(self.robot_name, 'KUKA_LBR_IV')
+                path = [points, poly_0_space(:,1)]+center;
+            elseif strcmp(self.robot_name, 'Planar4R')
+                path = [points, poly_0_plane(:,1)]+center;
+            end            
         end
 
         % Create circular path
@@ -227,31 +263,35 @@ classdef Simulation
 
         %% run simulation acceleration level
         function [joints_positions, directional_errors, elbow_positions, elbow_velocities] = run_simulation_acceleration_level(self)
-
+            
             ndof = self.robot.ndof;
             bounds = {self.robot.bounds_position, self.robot.bounds_velocity, self.robot.bounds_acceleration};
                             
             T = self.simulation_step;
-            Kp = 3;
+            Kp = 2;
             Kd = 0.05;
             
             % Current configuration (time h)
             q_h = self.robot.q_0;
             q_dot_h = self.robot.q_dot_0;
             ee_position_h = self.robot.ee_position_0;
-            elbow_position_h = self.robot.elbow_position_0;
+            link_1_h = self.robot.link_1_0;
+            %elbow_position_h = self.robot.elbow_position_0;
 
             % Jacobians of task 1, ee_position (time h)
             J1_h = self.robot.get_J_ee(q_h);
             J1_dot_h = self.robot.get_J_dot_ee(q_h, q_dot_h);
 
+            J2_h = self.robot.get_J_link_1(q_h);
+            J2_dot_h = self.robot.get_J_dot_link_1(q_h, q_dot_h);
+
             % Jacobians of task 2 (time h)
-            J2_h = eye(ndof);
-            J2_dot_h = zeros(7,7);
+            %J2_h = eye(ndof);
+            %J2_dot_h = zeros(7,7);
 
             % Jacobians of task 3, elbow_position (time h)
-            J3_h = self.robot.get_J_eb(q_h);
-            J3_dot_h = self.robot.get_J_dot_eb(q_h,q_dot_h);
+            %J3_h = self.robot.get_J_eb(q_h);
+            %J3_dot_h = self.robot.get_J_dot_eb(q_h,q_dot_h);
 
             % Previous configuration (time h-1)
             q_hm1 = self.robot.q_0;
@@ -259,24 +299,26 @@ classdef Simulation
 
             % Jacobian of task 1, ee_position (time h-1)
             J1_hm1 = self.robot.get_J_ee(q_hm1);    
-            J3_hm1 = self.robot.get_J_eb(q_hm1);   
+            J2_hm1 = self.robot.get_J_link_1(q_hm1);    
+            %J3_hm1 = self.robot.get_J_eb(q_hm1);   
 
             % Task 3:
-            x3_dot_d_hm1 = zeros(3,1);            
+            %x3_dot_d_hm1 = zeros(3,1);            
        
             % All configurations during task
             joints_positions = [q_h];
             directional_errors = [];
-            elbow_positions = [elbow_position_h];
-            elbow_velocities = [q_dot_h(4)];
+            %elbow_positions = [elbow_position_h];
+            %elbow_velocities = [q_dot_h(4)];
+            elbow_positions = [];
+            elbow_velocities = [];
             
             k = 1;
             x_d = self.path(1:3,k);
             
             counter = 0;
 
-            while true
-
+            while true                
                 if norm(ee_position_h - x_d) < 0.005
                     k = k+1;       
                     if k>size(self.path,2)
@@ -286,44 +328,41 @@ classdef Simulation
                 end
                 
                 % TASK 1: path following, paper formulation
-                if self.round_up
-                V_h = round( Kp*norm(x_d - ee_position_h) - Kd*norm(J1_hm1*q_dot_hm1) ,self.round_point);
-                x1_dot_d_h = round( V_h * ((x_d - ee_position_h) / norm(x_d - ee_position_h)) ,self.round_point);
-                x1_ddot_d_h =  round( (x1_dot_d_h-J1_hm1*q_dot_hm1) / T ,self.round_point);
-                m1 = length(x1_ddot_d_h);
-                else
                 V_h = Kp*norm(x_d - ee_position_h) - Kd*norm(J1_hm1*q_dot_hm1);
                 x1_dot_d_h = V_h * ((x_d - ee_position_h) / norm(x_d - ee_position_h));
                 x1_ddot_d_h =  (x1_dot_d_h-J1_hm1*q_dot_hm1) / T;
-                m1 = length(x1_ddot_d_h);
-                end
+                m1 = length(x1_ddot_d_h);               
 
                 % TASK 2: self motion dumping
-                q_ddot_cs = -1000*q_dot_h;
-                m2 = length(q_ddot_cs);
+                %q_ddot_cs = -1000*q_dot_h;
+                %m2 = length(q_ddot_cs);
 
                 % TASK 3: elbow
-                elbow_target_point = [elbow_position_h(1); 0; elbow_position_h(3)];                
-                if(norm(elbow_target_point-elbow_position_h)==0)
-                    x3_dot_d_h = zeros (3,1);
-                    x3_ddot_d_h = zeros (3,1);
-                else
-                    if self.round_up
-                    V3_h = round( Kp*norm(elbow_target_point - elbow_position_h) - Kd*norm(J3_hm1*q_dot_hm1) ,self.round_point);
-                    x3_dot_d_h = round( V3_h * ((elbow_target_point - elbow_position_h) / norm(elbow_target_point - elbow_position_h)) ,self.round_point);
-                    x3_ddot_d_h = round( (x3_dot_d_h-J3_hm1*q_dot_hm1) / T ,self.round_point);
-                    else
-                    V3_h = Kp*norm(elbow_target_point - elbow_position_h) - Kd*norm(x3_dot_d_hm1);
-                    x3_dot_d_h = V3_h * ((elbow_target_point - elbow_position_h) / norm(elbow_target_point - elbow_position_h));
-                    x3_ddot_d_h = (x3_dot_d_h-x3_dot_d_hm1) / T;
-                    end
-                end
-                m3 = length(x3_ddot_d_h);
-        
+%                 elbow_target_point = [elbow_position_h(1); 0; elbow_position_h(3)];                
+%                 if(norm(elbow_target_point-elbow_position_h)==0)
+%                    x3_dot_d_h = zeros(3,1);
+%                    x3_ddot_d_h = zeros(3,1);
+%                 else
+%                    V3_h = Kp*norm(elbow_target_point - elbow_position_h) - Kd*norm(x3_dot_d_hm1);
+%                    x3_dot_d_h = V3_h * ((elbow_target_point - elbow_position_h) / norm(elbow_target_point - elbow_position_h));
+%                    x3_ddot_d_h = (x3_dot_d_h-x3_dot_d_hm1) / T;
+%                 end
+%                 m3 = length(x3_ddot_d_h);
+
+%                 x3_dot_d_h = -50*elbow_position_h(2);
+%                 x3_ddot_d_h = (x3_dot_d_h - J3_h(2,:)*q_dot_h)/T;
+%                 m3 = length(x3_ddot_d_h);
+ 
+                % TASK 2
+                link_1_target_position = [0.25;0;0];
+                V_h = Kp*norm(link_1_target_position - link_1_h) - Kd*norm(J2_hm1*q_dot_hm1);
+                x2_dot_d_h = V_h * ((link_1_target_position - link_1_h) / norm(link_1_target_position - link_1_h));
+                x2_ddot_d_h =  (x2_dot_d_h-J2_hm1*q_dot_hm1) / T;
+                m2 = length(x2_ddot_d_h);                        
                 % SNS solution
-                %q_ddot_new = SNS_acceleration_multitask(ndof, {m1}, {J1_h}, {J1_dot_h}, {x1_ddot_d_h}, bounds, q_h, q_dot_h, T, self.round_up, self.round_point, true);                                
-                q_ddot_new = SNS_acceleration_multitask(ndof, {m1, m2}, {J1_h, J2_h}, {J1_dot_h, J2_dot_h}, {x1_ddot_d_h, q_ddot_cs}, bounds, q_h, q_dot_h, T, self.round_up, self.round_point, false);                                                
-                %q_ddot_new = SNS_acceleration_multitask(ndof, {m1, m3}, {J1_h, J3_h}, {J1_dot_h, J3_dot_h}, {x1_ddot_d_h, x3_ddot_d_h}, bounds, q_h, q_dot_h, T, self.round_up, self.round_point, false);                                                                
+                q_ddot_new = SNS_acceleration_multitask(ndof, {m1}, {J1_h}, {J1_dot_h}, {x1_ddot_d_h}, bounds, q_h, q_dot_h, T, self.round_up, self.round_point, true);                                
+                %q_ddot_new = SNS_acceleration_multitask(ndof, {m1, m2}, {J1_h, J2_h}, {J1_dot_h, J2_dot_h}, {x1_ddot_d_h, x2_ddot_d_h}, bounds, q_h, q_dot_h, T, self.round_up, self.round_point, false);                                                
+                %q_ddot_new = SNS_acceleration_multitask(ndof, {m1, m3}, {J1_h, J3_h(2,:)}, {J1_dot_h, J3_dot_h(2,:)}, {x1_ddot_d_h, x3_ddot_d_h}, bounds, q_h, q_dot_h, T, self.round_up, self.round_point, true);                                                                                
 
                 q_dot_new = q_dot_h + q_ddot_new*T;
                 q_new = q_h + q_dot_h*T + 0.5*q_ddot_new*T^2;
@@ -343,22 +382,20 @@ classdef Simulation
                 fprintf('norm(ee_position_h - x_d) = ');disp(norm(ee_position_h-x_d))      
                 fprintf('\n');
                 fprintf('x_d           = ');disp(x_d');
-                fprintf('ee_position_h = ');disp(ee_position_h');           
-                fprintf('\n');
-                fprintf('elbow_target_point = ');disp(elbow_target_point');
-                fprintf('elbow_position_h   =');disp(elbow_position_h');
+                fprintf('ee_position_h = ');disp(ee_position_h');
+                fprintf('link_1_h = ');disp(link_1_h');
+                %fprintf('elbow_target_point = ');disp(elbow_target_point')
+                %fprintf('elbow_position_h   =');disp(elbow_position_h');                
                 fprintf('\n');
                 fprintf('x1_dot_d_h    = ');disp(x1_dot_d_h');
                 fprintf('x1_ddot_d_h   = ');disp(x1_ddot_d_h');   
-                fprintf('x3_dot_d_h    = ');disp(x3_dot_d_h');
-                fprintf('x3_ddot_d_h   = ');disp(x3_ddot_d_h');   
+                fprintf('x2_dot_d_h    = ');disp(x2_dot_d_h');
+                fprintf('x2_ddot_d_h   = ');disp(x2_ddot_d_h');   
                 fprintf('\n');
                 fprintf('q_ddot_new    = ');disp(q_ddot_new')
                 fprintf('q_dot_new     = ');disp(q_dot_new')
                 fprintf('q_new         = ');disp(q_new')
-
-                fprintf('counter = ');disp(counter)
-
+                fprintf('counter = ');disp(counter) 
                 fprintf('==============================================================================\n')
 
                 if isnan(q_ddot_new)
@@ -369,8 +406,11 @@ classdef Simulation
                 q_dot_hm1 = q_dot_h;
                 ee_position_hm1 = ee_position_h;
                 J1_hm1 = J1_h;   
-                J3_hm1 = J3_h;
-                x3_dot_d_hm1 = x3_dot_d_h;
+
+                link_1_hm1 = link_1_h;
+                J2_hm1 = J2_h;   
+                %J3_hm1 = J3_h;
+                %x3_dot_d_hm1 = x3_dot_d_h;
         
                 % update current cunfiguration to new configuration
                 q_h = q_new;
@@ -380,9 +420,13 @@ classdef Simulation
                 J1_dot_h = self.robot.get_J_dot_ee(q_h, q_dot_h);
                 ee_position_h = self.robot.get_ee_position(q_h);                      
                 
-                J3_h = self.robot.get_J_eb(q_h);
-                J3_dot_h = self.robot.get_J_dot_eb(q_h, q_dot_h);
-                elbow_position_h = self.robot.get_elbow_position(q_h);                      
+                J2_h = self.robot.get_J_link_1(q_h);
+                J2_dot_h = self.robot.get_J_dot_link_1(q_h, q_dot_h);
+                link_1_h = self.robot.get_link_1(q_h);  
+
+                %J3_h = self.robot.get_J_eb(q_h);
+                %J3_dot_h = self.robot.get_J_dot_eb(q_h, q_dot_h);
+                %elbow_position_h = self.robot.get_elbow_position(q_h);                      
              
                 % Directional error
                 e_d = acos(dot(((x_d-ee_position_h)/norm(x_d-ee_position_h)), ((J1_h*q_dot_h)/norm(J1_h*q_dot_h))));
@@ -390,8 +434,8 @@ classdef Simulation
                 % Save new configuration
                 joints_positions = [joints_positions, q_h];
                 directional_errors = [directional_errors, e_d];
-                elbow_positions = [elbow_positions, elbow_position_h];
-                elbow_velocities = [elbow_velocities, q_dot_h(4)];
+                %elbow_positions = [elbow_positions, elbow_position_h];
+                %elbow_velocities = [elbow_velocities, q_dot_h(4)];
             
             end
         end

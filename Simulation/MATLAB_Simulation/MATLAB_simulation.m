@@ -17,12 +17,15 @@ classdef MATLAB_simulation
 
             self.robot = sim.robot;
             if strcmp(self.robot.name, 'KUKA_LBR_IIWA_7_R800')
-                %self.robot_model = importrobot('iiwa7.urdf'); 
-                %self.robot_model.DataFormat = 'row';
+                self.robot_model = importrobot('iiwa7.urdf'); 
+                self.robot_model.DataFormat = 'row';
             elseif strcmp(self.robot.name, 'KUKA_LBR_IV')
                 disp('KUKA LBR IV does not exist in Matlab System Toolbox. The simuluation will be done showing the end effector position only.');
                 %self.robot_model = importrobot('iiwa7.urdf');
                 %self.robot_model.DataFormat = 'row';
+            elseif strcmp(self.robot.name, 'Planar4R')
+                self.robot_model = importrobot('Planar4R.urdf', 'urdf'); 
+                self.robot_model.DataFormat = 'row';
             end
 
             self.joints_positions = sim.joints_positions; 
@@ -91,9 +94,9 @@ classdef MATLAB_simulation
             end
 
             elbow_position = zeros(num_frames,3);
-            for k = 1:num_frames
-                elbow_position(k,:) = self.robot.get_elbow_position(qInterp(k,:)');
-            end
+%             for k = 1:num_frames
+%                 elbow_position(k,:) = self.robot.get_elbow_position(qInterp(k,:)');
+%             end
 
             
             figure;
