@@ -169,7 +169,7 @@ classdef Simulation_Planar4R
                 q_dot_new = SNS_velocity_multitask(n, {m1}, {J1_h}, {x1_dot_d_h}, bounds, q_h, T, false);      
                 
                 % SNS solution multiple task (first + second task)
-                %q_dot_new = SNS_velocity_multitask(ndof, {m1, m2}, {J1_h, J2_h(2,:)}, {x1_dot_d_h, x2_dot_d_h}, bounds, q_h, T, false); 
+                %q_dot_new = SNS_velocity_multitask(n, {m1, m2}, {J1_h, J2_h(2,:)}, {x1_dot_d_h, x2_dot_d_h}, bounds, q_h, T, false); 
 
                 q_new = q_h + q_dot_new*T;
 
@@ -307,10 +307,10 @@ classdef Simulation_Planar4R
 
 
                 % SNS solution single task (first task)
-                q_ddot_new = SNS_acceleration_multitask(n, {m1}, {J1_h}, {J1_dot_h}, {x1_ddot_d_h}, bounds, q_h, q_dot_h, T, false);                                
+                % q_ddot_new = SNS_acceleration_multitask(n, {m1}, {J1_h}, {J1_dot_h}, {x1_ddot_d_h}, bounds, q_h, q_dot_h, T, false);                                
                 
                 % SNS solution multiple task (first + second task)
-                % q_ddot_new = SNS_acceleration_multitask(ndof, {m1, m2}, {J1_h, J2_h}, {J1_dot_h, J2_dot_h}, {x1_ddot_d_h, x2_ddot_d_h}, bounds, q_h, q_dot_h, T, false);                                                
+                q_ddot_new = SNS_acceleration_multitask(n, {m1, m2}, {J1_h, J2_h}, {J1_dot_h, J2_dot_h}, {x1_ddot_d_h, x2_ddot_d_h}, bounds, q_h, q_dot_h, T, false);                                                
                 
                 q_dot_new = q_dot_h + q_ddot_new*T;
                 q_new = q_h + q_dot_h*T + 0.5*q_ddot_new*T^2;

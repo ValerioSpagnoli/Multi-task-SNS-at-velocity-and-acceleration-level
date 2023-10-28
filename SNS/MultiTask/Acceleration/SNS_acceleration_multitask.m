@@ -53,7 +53,7 @@ end
 
 
 
-% SNS Algorithm 3
+%% SNS Algorithm 3: compute new acceleration from cartesian task
 function [q_ddot_bar_k, saturated_joints] = algorithm_3(n, m_k, x_ddot_k, J_k, J_dot_k, q_ddot_bar_km1, P_km1, q_dot, bounds_Q_ddot_min, bounds_Q_ddot_max, saturated_joints, verbose)
     
 W_star_k = eye(n);
@@ -68,12 +68,6 @@ W_star_k = eye(n);
     q_ddot_N_k = zeros(n,1);
     s_k=1;
     P_bar_k = P_km1;    
-
-%     for j=1:n
-%         if saturated_joints(j) == 1
-%             W_k(j,j)=0;            
-%         end
-%     end
 
     if verbose
         fprintf('P_bar_k = P_km1 = \n');disp(P_km1);
@@ -94,14 +88,6 @@ W_star_k = eye(n);
                
         q_ddot_bar_N_k = pinv((eye(n)-W_k)*P_km1) * q_ddot_N_k;
         q_ddot_tilde_k = q_ddot_bar_km1 + q_ddot_bar_N_k;
-
-%         if last_saturated_joint ~= -1
-%             if q_ddot_tilde_k(last_saturated_joint)<bounds_Q_ddot_min(last_saturated_joint)
-%                 q_ddot_tilde_k(last_saturated_joint) = bounds_Q_ddot_min(last_saturated_joint);
-%             elseif q_ddot_tilde_k(last_saturated_joint)>bounds_Q_ddot_max(last_saturated_joint)
-%                 q_ddot_tilde_k(last_saturated_joint) = bounds_Q_ddot_max(last_saturated_joint);        
-%             end
-%         end
 
         pinv_Jk_x_Pbark = pinv(J_k*P_bar_k);
         for j = 1:n
@@ -297,7 +283,7 @@ end
 
 
 
-% SNS Algorithm 4
+%% SNS Algorithm 4: compute new acceleration from a configuration space task
 function q_ddot_bar_k = algorithm_4(n, q_ddot_cs, q_ddot_bar_km1, P_km1, bounds_Q_ddot_min, bounds_Q_ddot_max, saturated_joints, verbose)
 
     W_cs = eye(n);
@@ -313,14 +299,14 @@ function q_ddot_bar_k = algorithm_4(n, q_ddot_cs, q_ddot_bar_km1, P_km1, bounds_
     a = P_bar_cs*q_ddot_cs;
     b = q_ddot_bar_km1;
 
-    [task_scaling_factor, most_critical_joint] = getTaskScalingFactor(n, a, b, bounds_Q_ddot_min, bounds_Q_ddot_max, round_up, round_point, verbose);    
+    [task_scaling_factor, most_critical_joint] = getTaskScalingFactor(n, a, b, bounds_Q_ddot_min, bounds_Q_ddot_max, verbose);    
     s_cs = task_scaling_factor;
     q_ddot_bar_k = q_ddot_bar_km1 + s_cs*P_bar_cs*q_ddot_cs;   
 end
 
 
 
-
+%% SNS algorithm 2: get scaling factor
 function [task_scaling_factor, most_critical_joint] = getTaskScalingFactor(n, a, b, bounds_min, bounds_max, verbose)
 
     S_min = zeros(1,n);
@@ -377,7 +363,7 @@ end
 
 
 
-% shaping joint acceleration bounds
+%% Shaping joint acceleration bounds
 function [bounds_Q_ddot_min, bounds_Q_ddot_max] = shaping_joint_acceleration_bounds(n, bounds, q, q_dot, T)
 
     bounds_min_position = bounds{1}(1,:);

@@ -157,7 +157,7 @@ classdef MATLAB_simulation
             end
             view([az, el]);
 
-            %pause(10);
+            pause(10);
             
             for k = 1:size(qInterp,1)
                 if isobject(robot_arm)

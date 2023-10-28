@@ -1,4 +1,4 @@
-classdef Simulation
+classdef Simulation_KUKA
     properties
         level
         robot
@@ -17,7 +17,7 @@ classdef Simulation
 
     methods
         %% Constructur
-        function self = Simulation(level, robot_name, q_0, q_dot_0, q_ddot_0, simulation_step, epsilon)
+        function self = Simulation_KUKA(level, robot_name, q_0, q_dot_0, q_ddot_0, simulation_step, epsilon)
 
             format short
 
@@ -87,7 +87,7 @@ classdef Simulation
             
             % compute path
             fprintf('Creating path ... ')
-            self.path = self.create_hexagonal_path(1);
+            self.path = self.create_hexagonal_path(2);
             % self.path = self.create_circular_path(1);
             fprintf('done! \n');
 
@@ -165,7 +165,7 @@ classdef Simulation
             J1_dot_h = self.robot.get_J_dot_ee(q_h, q_dot_h);
 
             % Jacobians of task 2 (time h)
-            J2_h = eye(ndof);
+            J2_h = eye(n);
             J2_dot_h = zeros(7,7);
 
             % Jacobians of task 3, elbow_position (time h)
@@ -238,8 +238,8 @@ classdef Simulation
 
                 % % SNS solution                
                 q_dot_new = SNS_velocity_multitask(n, {m1}, {J1_h}, {x1_dot_d_h}, bounds, q_h, T, false);                                
-                %q_dot_new = SNS_velocity_multitask(ndof, {m1, m2}, {J1_h, J2_h}, {x1_ddot_d_h, q_dot_cs}, bounds, q_h, T, false);                                                
-                %q_dot_new = SNS_velocity_multitask(ndof, {m1, m3}, {J1_h, J3_h}, {x1_ddot_d_h, x3_ddot_d_h}, bounds, q_h, T, false);    
+                %q_dot_new = SNS_velocity_multitask(n, {m1, m2}, {J1_h, J2_h}, {x1_ddot_d_h, q_dot_cs}, bounds, q_h, T, false);                                                
+                %q_dot_new = SNS_velocity_multitask(n, {m1, m3}, {J1_h, J3_h}, {x1_ddot_d_h, x3_ddot_d_h}, bounds, q_h, T, false);    
 
                 q_new = q_h + q_dot_new*T;
 
@@ -325,7 +325,7 @@ classdef Simulation
             J1_dot_h = self.robot.get_J_dot_ee(q_h, q_dot_h);
 
             % Jacobians of task 2 (time h)
-            J2_h = eye(ndof);
+            J2_h = eye(n);
             J2_dot_h = zeros(7,7);
 
             % Jacobians of task 3, elbow_position (time h)
@@ -398,9 +398,9 @@ classdef Simulation
                 % m3 = length(x3_ddot_d_h);
                         
                 % SNS solution
-                q_ddot_new = SNS_acceleration_multitask(n, {m1}, {J1_h}, {J1_dot_h}, {x1_ddot_d_h}, bounds, q_h, q_dot_h, T, true);                                
-                %q_ddot_new = SNS_acceleration_multitask(ndof, {m1, m2}, {J1_h, J2_h}, {J1_dot_h, J2_dot_h}, {x1_ddot_d_h, q_ddot_cs}, bounds, q_h, q_dot_h, T, false);                                                
-                %q_ddot_new = SNS_acceleration_multitask(ndof, {m1, m3}, {J1_h, J3_h}, {J1_dot_h, J3_dot_h}, {x1_ddot_d_h, x3_ddot_d_h}, bounds, q_h, q_dot_h, T, false);                                                                                
+                %q_ddot_new = SNS_acceleration_multitask(n, {m1}, {J1_h}, {J1_dot_h}, {x1_ddot_d_h}, bounds, q_h, q_dot_h, T, true);                                
+                q_ddot_new = SNS_acceleration_multitask(n, {m1, m2}, {J1_h, J2_h}, {J1_dot_h, J2_dot_h}, {x1_ddot_d_h, q_ddot_cs}, bounds, q_h, q_dot_h, T, false);                                                
+                %q_ddot_new = SNS_acceleration_multitask(n, {m1, m3}, {J1_h, J3_h}, {J1_dot_h, J3_dot_h}, {x1_ddot_d_h, x3_ddot_d_h}, bounds, q_h, q_dot_h, T, false);                                                                                
 
                 q_dot_new = q_dot_h + q_ddot_new*T;
                 q_new = q_h + q_dot_h*T + 0.5*q_ddot_new*T^2;
@@ -424,9 +424,9 @@ classdef Simulation
                 fprintf('elbow_position_h   =');disp(elbow_position_h');                
                 fprintf('\n');
                 fprintf('x1_dot_d_h         = ');disp(x1_dot_d_h');
-                fprintf('x1_ddot_d_h        = ');disp(x1_ddot_d_h');   
-                fprintf('x2_dot_d_h         = ');disp(x2_dot_d_h');
-                fprintf('x2_ddot_d_h        = ');disp(x2_ddot_d_h');   
+                fprintf('x1_ddot_d_h        = ');disp(x1_ddot_d_h');                  
+                fprintf('x3_dot_d_h         = ');disp(x3_dot_d_h');
+                fprintf('x3_ddot_d_h        = ');disp(x3_ddot_d_h');   
                 fprintf('\n');
                 fprintf('q_ddot_new         = ');disp(q_ddot_new')
                 fprintf('q_dot_new          = ');disp(q_dot_new')
