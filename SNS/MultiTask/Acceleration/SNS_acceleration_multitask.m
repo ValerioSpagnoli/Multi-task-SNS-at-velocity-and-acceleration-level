@@ -56,13 +56,12 @@ end
 %% SNS Algorithm 3: compute new acceleration from cartesian task
 function [q_ddot_bar_k, saturated_joints] = algorithm_3(n, m_k, x_ddot_k, J_k, J_dot_k, q_ddot_bar_km1, P_km1, q_dot, bounds_Q_ddot_min, bounds_Q_ddot_max, saturated_joints, verbose)
     
-W_star_k = eye(n);
+    W_star_k = eye(n);
     P_bar_star_k = eye(n);
     q_ddot_star_N_k = zeros(n,1);
     s_star_k = 0;
     most_critical_joint_star = -1;
-    saturated_joints_star = saturated_joints;
-    last_saturated_joint = -1;
+    saturated_joints_star = saturated_joints;    
 
     W_k = eye(n);
     q_ddot_N_k = zeros(n,1);
@@ -113,12 +112,6 @@ W_star_k = eye(n);
         fprintf('q_ddot_bar_km1 = ');disp(q_ddot_bar_km1');
         fprintf('q_ddot_bar_N_k = ');disp(q_ddot_bar_N_k');
         fprintf('q_ddot_tilde_k = ');disp(q_ddot_tilde_k');
-        fprintf('\n');
-        fprintf('s_k*x_ddot_k = ');disp((s_k*x_ddot_k)')
-        fprintf('J_dot_k*q_dot = ');disp((J_dot_k*q_dot)');
-        fprintf('J_k*q_ddot_tilde_k = ');disp((J_k*q_ddot_tilde_k)');
-        fprintf('pinv(J_k*P_bar_k)*(s_k*x_ddot_k - J_dot_k*q_dot - J_k*q_ddot_tilde_k) = ');disp((pinv_Jk_x_Pbark*(s_k*x_ddot_k - J_dot_k*q_dot - J_k*q_ddot_tilde_k))');
-        fprintf('\n');
         fprintf('q_ddot_bar_k   = ');disp(q_ddot_bar_k');           
         end
     
@@ -185,8 +178,7 @@ W_star_k = eye(n);
                 end    
             end
 
-            j = most_critical_joint;
-            last_saturated_joint = j;
+            j = most_critical_joint;            
             saturated_joints(j) = 1;
 
             % saturate the most critical joint
@@ -258,12 +250,6 @@ W_star_k = eye(n);
                 fprintf('    q_ddot_bar_km1 = ');disp(q_ddot_bar_km1');
                 fprintf('    q_ddot_bar_N_k = ');disp(q_ddot_bar_N_k');
                 fprintf('    q_ddot_tilde_k = ');disp(q_ddot_tilde_k');
-                fprintf('\n');
-                fprintf('    s_k*x_ddot_k = ');disp((s_k*x_ddot_k)')
-                fprintf('    J_dot_k*q_dot = ');disp((J_dot_k*q_dot)');
-                fprintf('    J_k*q_ddot_tilde_k = ');disp((J_k*q_ddot_tilde_k)');
-                fprintf('    pinv(J_k*P_bar_k)*(s_k*x_ddot_k - J_dot_k*q_dot - J_k*q_ddot_tilde_k) = ');disp((pinv_Jk_x_Pbark*(s_k*x_ddot_k - J_dot_k*q_dot - J_k*q_ddot_tilde_k))');
-                fprintf('\n');
                 fprintf('    q_ddot_bar_k   = ');disp(q_ddot_bar_k'); 
                 fprintf('..........................................................\n')
                 end                

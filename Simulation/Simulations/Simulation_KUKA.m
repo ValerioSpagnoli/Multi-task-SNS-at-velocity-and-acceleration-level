@@ -449,7 +449,8 @@ classdef Simulation_KUKA
                 % update current cunfiguration to new configuration
                 q_h = q_new;
                 q_dot_h = q_dot_new;
-               
+                q_ddot_h = q_ddot_new;
+
                 J1_h = self.robot.get_J_ee(q_h);
                 J1_dot_h = self.robot.get_J_dot_ee(q_h, q_dot_h);
                 ee_position_h = self.robot.get_ee_position(q_h);                      
@@ -464,7 +465,7 @@ classdef Simulation_KUKA
                 % Save new configuration
                 joints_positions = [joints_positions, q_h];
                 joints_velocities = [joints_velocities, q_dot_h]; 
-                joints_accelerations = [joints_accelerations, q_dot_h]; 
+                joints_accelerations = [joints_accelerations, q_ddot_h]; 
                 directional_errors = [directional_errors, e_d];            
             end
         end
