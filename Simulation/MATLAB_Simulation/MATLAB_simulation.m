@@ -20,8 +20,9 @@ classdef MATLAB_simulation
             if strcmp(self.robot.name, 'KUKA_LBR_IIWA_7_R800')
                 self.robot_model = importrobot('iiwa7.urdf'); 
                 self.robot_model.DataFormat = 'row';
-            elseif strcmp(self.robot.name, 'KUKA_LBR_IV')
-                disp('KUKA LBR IV does not exist in Matlab System Toolbox. The simuluation will be done showing the end effector position only.');
+            elseif strcmp(self.robot.name, 'KUKA_LBR_IV')                
+                [self.robot_model] = importrobot('KUKA_LBR_IV.urdf');                             
+                self.robot_model.DataFormat = 'row';
             elseif strcmp(self.robot.name, 'Planar4R')
                 self.robot_model = importrobot('Planar4R.urdf', 'urdf'); 
                 self.robot_model.DataFormat = 'row';
@@ -116,8 +117,21 @@ classdef MATLAB_simulation
             figure('Position', [100, 100, 1000, 800]);
 
             if isobject(robot_arm)
-                show(robot_arm, self.joints_positions(:,1)', 'PreservePlot', false);
-                hold on
+                show(robot_arm, self.joints_positions(:,1)', 'PreservePlot', false); hold on;
+            end
+
+            if strcmp(self.robot.name, 'Planar4R')
+                xlim([-1.5 1.5]);
+                ylim([-1.5 1.5]);
+                zlim([0 1]);    
+            elseif strcmp(self.robot.name, 'KUKA_LBR_IIWA_7_R800') || strcmp(self.robot.name, 'KUKA_LBR_IV')
+                xlim([-1 1]);
+                ylim([-1 1]);
+                zlim([0 1.5]);
+
+                [x, y, z] = meshgrid(-5:0.2:5, -5:0.2:5, 0:0);
+                surf(x, y, z, 'FaceColor','0.2,0.2,0.2', 'FaceAlpha','0.2'); hold on;
+                hold on;
             end
 
 

@@ -87,7 +87,7 @@ classdef Simulation_KUKA
             
             % compute path
             fprintf('Creating path ... ')
-            self.path = self.create_hexagonal_path(2);
+            self.path = self.create_hexagonal_path(1);
             % self.path = self.create_circular_path(1);
             fprintf('done! \n');
 
@@ -398,8 +398,8 @@ classdef Simulation_KUKA
                 % m3 = length(x3_ddot_d_h);
                         
                 % SNS solution
-                %q_ddot_new = SNS_acceleration_multitask(n, {m1}, {J1_h}, {J1_dot_h}, {x1_ddot_d_h}, bounds, q_h, q_dot_h, T, true);                                
-                q_ddot_new = SNS_acceleration_multitask(n, {m1, m2}, {J1_h, J2_h}, {J1_dot_h, J2_dot_h}, {x1_ddot_d_h, q_ddot_cs}, bounds, q_h, q_dot_h, T, false);                                                
+                q_ddot_new = SNS_acceleration_multitask(n, {m1}, {J1_h}, {J1_dot_h}, {x1_ddot_d_h}, bounds, q_h, q_dot_h, T, false);                                
+                %q_ddot_new = SNS_acceleration_multitask(n, {m1, m2}, {J1_h, J2_h}, {J1_dot_h, J2_dot_h}, {x1_ddot_d_h, q_ddot_cs}, bounds, q_h, q_dot_h, T, false);                                                
                 %q_ddot_new = SNS_acceleration_multitask(n, {m1, m3}, {J1_h, J3_h}, {J1_dot_h, J3_dot_h}, {x1_ddot_d_h, x3_ddot_d_h}, bounds, q_h, q_dot_h, T, false);                                                                                
 
                 q_dot_new = q_dot_h + q_ddot_new*T;

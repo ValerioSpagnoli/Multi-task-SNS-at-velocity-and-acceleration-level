@@ -2,7 +2,7 @@ classdef KUKA_LBR_IV
     properties
 
         % number of degrees of freedom of robot
-        ndof
+        n
         t
         
         % symbolic variables vector
@@ -43,7 +43,7 @@ classdef KUKA_LBR_IV
         %% constructur
         function self = KUKA_LBR_IV(q_0, q_dot_0, q_ddot_0)
 
-            self.ndof = 7;
+            self.n = 7;
 
             % define symbolic variables
             syms t 
@@ -73,8 +73,8 @@ classdef KUKA_LBR_IV
 
 
             % symbolic end effector position: ee_position
-            T = {1,self.ndof};
-            for i=1:self.ndof
+            T = {1,self.n};
+            for i=1:self.n
                 alpha_i = DH_matrix(i,1);
                 d_i = DH_matrix(i,2);
                 a_i = DH_matrix(i,3);
