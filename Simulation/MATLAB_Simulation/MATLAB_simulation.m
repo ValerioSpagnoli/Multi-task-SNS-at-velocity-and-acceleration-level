@@ -133,12 +133,18 @@ classdef MATLAB_simulation
                 [x, y, z] = meshgrid(-5:0.2:5, -5:0.2:5, 0:0);
                 surf(x, y, z, 'FaceColor','0.1,0.1,0.1', 'FaceAlpha','0.1'); hold on; 
             elseif strcmp(self.robot.name, 'KUKA_LBR_IIWA_7_R800') || strcmp(self.robot.name, 'KUKA_LBR_IV')
-                az = 45;
-                el = 30;
+                az = 80;
+                el = 15;
                 
                 xlim([-1 1]);
                 ylim([-1 1]);
                 zlim([0 1.5]);
+
+                zoomFactor = 0.8;   
+                zoomPoint = [0.1; 0.3; 0.7];
+                xlim([zoomPoint(1) - zoomFactor, zoomPoint(1) + zoomFactor]);
+                ylim([zoomPoint(2) - zoomFactor, zoomPoint(2) + zoomFactor]);
+                zlim([0, zoomPoint(3) + zoomFactor]);
                 [x, y, z] = meshgrid(-5:0.2:5, -5:0.2:5, 0:0);
                 surf(x, y, z, 'FaceColor','0.2,0.2,0.2', 'FaceAlpha','0.2'); hold on; 
             end
@@ -154,14 +160,14 @@ classdef MATLAB_simulation
             end
             plot3(points_x, points_y, points_z, '-square', 'Color', 'r'); hold on;
         
-            p1 = plot3(end_effector_position(1,1), end_effector_position(1,2), end_effector_position(1,3), 'Color', 'black'); hold on;
+            p1 = plot3(end_effector_position(1,1), end_effector_position(1,2), end_effector_position(1,3), 'Color', 'black', 'LineWidth',1.5); hold on;
 
             if strcmp(self.robot.name, 'Planar4R')
-                p2 = plot3(link_1_positions(1,1), link_1_positions(1,2), link_1_positions(1,3), 'Color', 'blue'); hold on;               
-                p3 = plot3(link_1_positions(1,1), link_1_positions(1,2), link_1_positions(1,3), 'Color', 'red'); hold on;
-                p4 = plot3(link_1_positions(1,1), link_1_positions(1,2), link_1_positions(1,3), 'Color', 'magenta'); hold on;
+                p2 = plot3(link_1_positions(1,1), link_1_positions(1,2), link_1_positions(1,3), 'Color', 'blue', 'LineWidth',1.5); hold on;               
+                p3 = plot3(link_2_positions(1,1), link_2_positions(1,2), link_2_positions(1,3), 'Color', 'red'); hold on;
+                p4 = plot3(link_3_positions(1,1), link_3_positions(1,2), link_3_positions(1,3), 'Color', 'magenta'); hold on;
             elseif strcmp(self.robot.name, 'KUKA_LBR_IIWA_7_R800') || strcmp(self.robot.name, 'KUKA_LBR_IV')
-                p2 = plot3(elbow_position(1,1), elbow_position(1,2), elbow_position(1,3), 'Color', 'blue'); hold on;
+                p2 = plot3(elbow_position(1,1), elbow_position(1,2), elbow_position(1,3), 'Color', 'blue', 'LineWidth',1.5); hold on;
             end
             grid on;
 
