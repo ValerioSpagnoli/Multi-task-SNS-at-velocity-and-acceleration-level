@@ -121,19 +121,28 @@ classdef MATLAB_simulation
             end
 
             if strcmp(self.robot.name, 'Planar4R')
-                xlim([-1.5 1.5]);
-                ylim([-1.5 1.5]);
-                zlim([0 1]);    
+                az = 0; 
+                el = 90;  
+                
+                zoomFactor = 1;   
+                zoomPoint = [0.7; 0; 0];
+                xlim([zoomPoint(1) - zoomFactor, zoomPoint(1) + zoomFactor]);
+                ylim([zoomPoint(2) - zoomFactor, zoomPoint(2) + zoomFactor]);
+                zlim([0, zoomPoint(3) + zoomFactor]);
+
+                [x, y, z] = meshgrid(-5:0.2:5, -5:0.2:5, 0:0);
+                surf(x, y, z, 'FaceColor','0.1,0.1,0.1', 'FaceAlpha','0.1'); hold on; 
             elseif strcmp(self.robot.name, 'KUKA_LBR_IIWA_7_R800') || strcmp(self.robot.name, 'KUKA_LBR_IV')
+                az = 45;
+                el = 30;
+                
                 xlim([-1 1]);
                 ylim([-1 1]);
                 zlim([0 1.5]);
-
                 [x, y, z] = meshgrid(-5:0.2:5, -5:0.2:5, 0:0);
-                surf(x, y, z, 'FaceColor','0.2,0.2,0.2', 'FaceAlpha','0.2'); hold on;
-                hold on;
+                surf(x, y, z, 'FaceColor','0.2,0.2,0.2', 'FaceAlpha','0.2'); hold on; 
             end
-
+            view([az, el]);
 
             points_x = zeros(1, length(self.points));
             points_y = zeros(1, length(self.points));
@@ -155,21 +164,6 @@ classdef MATLAB_simulation
                 p2 = plot3(elbow_position(1,1), elbow_position(1,2), elbow_position(1,3), 'Color', 'blue'); hold on;
             end
             grid on;
-
-            if strcmp(self.robot.name, 'Planar4R')
-                az = 0; 
-                el = 90;  
-                
-                zoomFactor = 1;   
-                zoomPoint = [0.7; 0; 0];
-                xlim([zoomPoint(1) - zoomFactor, zoomPoint(1) + zoomFactor]);
-                ylim([zoomPoint(2) - zoomFactor, zoomPoint(2) + zoomFactor]);
-                zlim([zoomPoint(3) - zoomFactor, zoomPoint(3) + zoomFactor]);
-            elseif strcmp(self.robot.name, 'KUKA_LBR_IIWA_7_R800') || strcmp(self.robot.name, 'KUKA_LBR_IV')
-                az = 45;
-                el = 30;
-            end
-            view([az, el]);
 
             pause(10);
             
