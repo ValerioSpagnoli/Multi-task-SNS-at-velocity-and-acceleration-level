@@ -12,6 +12,10 @@ classdef Simulation_Planar4R
         joints_positions
         joints_velocities
         joints_accelerations
+        ee_positions
+        ee_velocities
+        link_1_positions
+        link_1_velocities
         directional_errors
     end
 
@@ -67,7 +71,7 @@ classdef Simulation_Planar4R
                                 
             % compute path
             fprintf('Creating path ... ')
-            self.path = self.create_hexagonal_path(1);            
+            self.path = self.create_hexagonal_path(2);            
             fprintf('done! \n');
            
             % compute simulation
@@ -76,7 +80,7 @@ classdef Simulation_Planar4R
             if strcmp(level, 'velocity')
                 [self.joints_positions, self.joints_velocities, self.directional_errors] = self.run_simulation_velocity_level();
             elseif strcmp(level, 'acceleration')
-                [self.joints_positions, self.joints_velocities, self.joints_accelerations, self.directional_errors] = self.run_simulation_acceleration_level();
+                [self.joints_positions, self.joints_velocities, self.joints_accelerations, self.ee_positions, self.ee_velocities, self.link_1_positions, self.link_1_velocities, self.directional_errors] = self.run_simulation_acceleration_level();
             end
             fprintf('Simulation ended. \n')
         end
@@ -233,7 +237,7 @@ classdef Simulation_Planar4R
         end
 
         %% run simulation acceleration level
-        function [joints_positions, joints_velocities, joints_accelerations, directional_errors] = run_simulation_acceleration_level(self)
+        function [joints_positions, joints_velocities, joints_accelerations, ee_positions, ee_velocities, link_1_positions, link_1_velocities, directional_errors] = run_simulation_acceleration_level(self)
             
             n = self.robot.n;
             bounds = {self.robot.bounds_position, self.robot.bounds_velocity, self.robot.bounds_acceleration};
@@ -254,6 +258,10 @@ classdef Simulation_Planar4R
             J2_h = self.robot.get_J_link_1(q_h);
             J2_dot_h = self.robot.get_J_dot_link_1(q_h, q_dot_h);
 
+            % Jacobians of task 3, self motion dumping (time h)
+            J3_h = eye(n);
+            J3_dot_h = zeros(7,7);
+
             % Previous configuration (time h-1)
             q_hm1 = self.robot.q_0;
             q_dot_hm1 = self.robot.q_ddot_0;
@@ -271,11 +279,18 @@ classdef Simulation_Planar4R
             % Set PD controller gains of task 2
             Kp_2 = 2;
             Kd_2 = 0.05;
+
+            % Set gain of task 3
+            Kp_CS = 1000;
                  
             % All configurations during task
             joints_positions = [q_h];  
             joints_velocities = [q_dot_h];
-            joints_accelerations = [zeros(n,1)];
+            joints_accelerations = [zeros(n,1)];   
+            ee_positions = [ee_position_h];
+            ee_velocities = [J1_h*q_dot_h];
+            link_1_positions = [link_1_position_h];
+            link_1_velocities = [J2_h*q_dot_h];
             directional_errors = [];
             
             k = 1;
@@ -305,13 +320,21 @@ classdef Simulation_Planar4R
                 x2_ddot_d_h =  (x2_dot_d_h-J2_hm1*q_dot_hm1) / T;
                 m2 = length(x2_ddot_d_h);            
 
+                % TASK 3: self motion dumping
+                q_ddot_cs = -Kp_CS*q_dot_h;
+                m3 = length(q_ddot_cs);
+
 
                 % SNS solution single task (first task)
-                %q_ddot_new = SNS_acceleration_multitask(n, {m1}, {J1_h}, {J1_dot_h}, {x1_ddot_d_h}, bounds, q_h, q_dot_h, T, false);                                
+                q_ddot_new = SNS_acceleration_multitask(n, {m1}, {J1_h}, {J1_dot_h}, {x1_ddot_d_h}, bounds, q_h, q_dot_h, T, false);                                
                 
                 % SNS solution multiple task (first + second task)
-                q_ddot_new = SNS_acceleration_multitask(n, {m1, m2}, {J1_h, J2_h}, {J1_dot_h, J2_dot_h}, {x1_ddot_d_h, x2_ddot_d_h}, bounds, q_h, q_dot_h, T, false);                                                
-                
+                %q_ddot_new = SNS_acceleration_multitask(n, {m1, m2}, {J1_h, J2_h}, {J1_dot_h, J2_dot_h}, {x1_ddot_d_h, x2_ddot_d_h}, bounds, q_h, q_dot_h, T, false);                                                
+                            
+                % SNS solution multiple task (first + third task)
+                %q_ddot_new = SNS_acceleration_multitask(n, {m1, m3}, {J1_h, J3_h}, {J1_dot_h, J3_dot_h}, {x1_ddot_d_h, q_ddot_cs}, bounds, q_h, q_dot_h, T, false);                                                
+
+
                 q_dot_new = q_dot_h + q_ddot_new*T;
                 q_new = q_h + q_dot_h*T + 0.5*q_ddot_new*T^2;
 
@@ -327,21 +350,21 @@ classdef Simulation_Planar4R
 
                 fprintf('k = %d\n', k);
                 fprintf('norm(ee_position_h - x_d) = ');disp(norm(ee_position_h-x_d))      
-                fprintf('\n');
-                fprintf('x_d               = ');disp(x_d');
-                fprintf('ee_position_h     = ');disp(ee_position_h');
-                fprintf('link_1_position_h = ');disp(link_1_position_h');              
-                fprintf('\n');
-                fprintf('x1_dot_d_h        = ');disp(x1_dot_d_h');
-                fprintf('x1_ddot_d_h       = ');disp(x1_ddot_d_h');   
-                fprintf('x2_dot_d_h        = ');disp(x2_dot_d_h');
-                fprintf('x2_ddot_d_h       = ');disp(x2_ddot_d_h');   
-                fprintf('\n');
-                fprintf('q_ddot_new        = ');disp(q_ddot_new')
-                fprintf('q_dot_new         = ');disp(q_dot_new')
-                fprintf('q_new             = ');disp(q_new')
-                fprintf('saturation_counter= ');disp(saturation_counter) 
-                fprintf('==============================================================================\n')
+%                 fprintf('\n');
+%                 fprintf('x_d               = ');disp(x_d');
+%                 fprintf('ee_position_h     = ');disp(ee_position_h');
+%                 fprintf('link_1_position_h = ');disp(link_1_position_h');              
+%                 fprintf('\n');
+%                 fprintf('x1_dot_d_h        = ');disp(x1_dot_d_h');
+%                 fprintf('x1_ddot_d_h       = ');disp(x1_ddot_d_h');   
+%                 fprintf('x2_dot_d_h        = ');disp(x2_dot_d_h');
+%                 fprintf('x2_ddot_d_h       = ');disp(x2_ddot_d_h');   
+%                 fprintf('\n');
+%                 fprintf('q_ddot_new        = ');disp(q_ddot_new')
+%                 fprintf('q_dot_new         = ');disp(q_dot_new')
+%                 fprintf('q_new             = ');disp(q_new')
+%                 fprintf('saturation_counter= ');disp(saturation_counter) 
+%                 fprintf('==============================================================================\n')
 
                 if isnan(q_ddot_new)
                     break;
@@ -373,6 +396,10 @@ classdef Simulation_Planar4R
                 joints_positions = [joints_positions, q_h];
                 joints_velocities = [joints_velocities, q_dot_h];
                 joints_accelerations = [joints_accelerations, q_ddot_h];
+                ee_positions = [ee_positions, ee_position_h];
+                ee_velocities = [ee_velocities, J1_h*q_dot_h];
+                link_1_positions = [link_1_positions, link_1_position_h];
+                link_1_velocities = [link_1_velocities, J2_h*q_dot_h];
                 directional_errors = [directional_errors, e_d];
             
             end
