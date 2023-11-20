@@ -25,10 +25,10 @@ classdef MATLAB_simulation
         function self = MATLAB_simulation(sim)
             
             clear figure;
-            self.folder_path = '/Users/valeriospagnoli/Documents/MATLAB/Robotics/MultiTask_SNS/Simulation/Results/Planar4R/task1/Plots/';
-            self.title_font_size = 16;
-            self.label_font_size = 12;
-            self.legend_font_size = 10;
+            self.folder_path = '/Users/valeriospagnoli/Documents/MATLAB/Robotics/MultiTask_SNS/Simulation/Results/Planar4R/task1_task3/Plots/';
+            self.title_font_size = 30;
+            self.label_font_size = 22;
+            self.legend_font_size = 18;
 
             self.robot = sim.robot;
             if strcmp(self.robot.name, 'KUKA_LBR_IIWA_7_R800')
