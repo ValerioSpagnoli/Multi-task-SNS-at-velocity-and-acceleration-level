@@ -12,6 +12,10 @@ classdef Simulation_KUKA
         joints_positions
         joints_velocities
         joints_accelerations
+        ee_positions
+        ee_velocities
+        elbow_positions
+        elbow_velocities
         directional_errors
     end
 
@@ -99,7 +103,7 @@ classdef Simulation_KUKA
             if strcmp(level, 'velocity')
                 [self.joints_positions, self.joints_velocities, self.directional_errors] = self.run_simulation_velocity_level();
             elseif strcmp(level, 'acceleration')
-                [self.joints_positions, self.joints_velocities, self.joints_accelerations, self.directional_errors] = self.run_simulation_acceleration_level();
+                [self.joints_positions, self.joints_velocities, self.joints_accelerations, self.ee_positions, self.ee_velocities, self.elbow_positions, self.elbow_velocities, self.directional_errors] = self.run_simulation_acceleration_level();
             end
             fprintf('Simulation ended. \n')
         end
@@ -335,7 +339,7 @@ classdef Simulation_KUKA
         end
 
         %% run simulation acceleration level
-        function [joints_positions, joints_velocities, joints_accelerations, directional_errors] = run_simulation_acceleration_level(self)
+        function [joints_positions, joints_velocities, joints_accelerations, ee_positions, ee_velocities, elbow_positions, elbow_velocities, directional_errors] = run_simulation_acceleration_level(self)
             
             n = self.robot.n;
             bounds = {self.robot.bounds_position, self.robot.bounds_velocity, self.robot.bounds_acceleration};
@@ -381,6 +385,10 @@ classdef Simulation_KUKA
             joints_positions = [q_h];
             joints_velocities = [q_dot_h]; 
             joints_accelerations = [zeros(n,1)]; 
+            ee_positions = [ee_position_h];
+            ee_velocities = [J1_h*q_dot_h];
+            elbow_positions = [link_1_position_h];
+            elbow_velocities = [J3_h*q_dot_h];
             directional_errors = [];
             
             k = 1;
@@ -489,6 +497,10 @@ classdef Simulation_KUKA
                 joints_positions = [joints_positions, q_h];
                 joints_velocities = [joints_velocities, q_dot_h]; 
                 joints_accelerations = [joints_accelerations, q_ddot_h]; 
+                ee_positions = [ee_positions, ee_position_h];
+                ee_velocities = [ee_velocities, J1_h*q_dot_h];
+                elbow_positions = [elbow_positions, link_1_position_h];
+                elbow_velocities = [elbow_velocities, J3_h*q_dot_h];
                 directional_errors = [directional_errors, e_d];            
             end
         end
