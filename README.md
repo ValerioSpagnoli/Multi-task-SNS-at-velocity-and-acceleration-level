@@ -1,4 +1,4 @@
-# Multi task Saturation in the Null Space method at acceleration and velocity level
+# Multi task Saturation in the Null Space (SNS) method at acceleration and velocity level
 
 This repository contain the framework for computing the Saturation in the Null Space method at acceleration and velocity level.
 
@@ -40,7 +40,7 @@ All simulation are performed at acceleration level, using a sampling time of 1 m
 
 ## Directory tree
 ```sh
-MultiTask_SNS
+Multi-task-SNS-at-velocity-and-acceleration-level
 ├── SNS
 │   ├── Accleration
 │   │   ├── Example_4R_velocity.m
