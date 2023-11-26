@@ -3,10 +3,15 @@
 This repository contain the framework for computing the Saturation in the Null Space method at acceleration and velocity level, using preemptive prioritization strategy.
 
 The reference papers are:
-- F. Flacco, A. De Luca and O. Khatib, "Prioritized multi-task motion control of redundant robots under hard joint constraints," 2012 IEEE/RSJ International Conference on Intelligent Robots and Systems, Vilamoura-Algarve, Portugal, 2012, pp. 3970-3977, doi: 10.1109/IROS.2012.6385619.
-- F. Flacco, A. De Luca and O. Khatib, "Motion control of redundant robots under joint constraints: Saturation in the Null Space," 2012 IEEE International Conference on Robotics and Automation, Saint Paul, MN, USA, 2012, pp. 285-292, doi: 10.1109/ICRA.2012.6225376.
+- [F. Flacco, A. De Luca and O. Khatib, "Prioritized multi-task motion control of redundant robots under hard joint constraints," 2012 IEEE/RSJ International Conference on Intelligent Robots and Systems, Vilamoura-Algarve, Portugal, 2012, pp. 3970-3977, doi: 10.1109/IROS.2012.6385619.](https://ieeexplore.ieee.org/document/6385619)
+- [F. Flacco, A. De Luca and O. Khatib, "Motion control of redundant robots under joint constraints: Saturation in the Null Space," 2012 IEEE International Conference on Robotics and Automation, Saint Paul, MN, USA, 2012, pp. 285-292, doi: 10.1109/ICRA.2012.6225376.](https://ieeexplore.ieee.org/document/6225376)
 
-## Visuals
+## Description
+
+The SNS method is a Null Space method to perform prioritized multi task motion control of redudant robot under hard joint constraints, using the preemtive prioritization approach.
+Proceeds, iteration by iteration, by discarding the commands that exceed the hard bounds of a task with a specific priority, and reintroducing them at their saturated level, by projection in the Null Space of a suitable Jacobian associated to the already considered tasks (higher priority tasks). Moreover, if the command exceed also with the redistributed effort, a task scaling approach is used to keep the joints into their bounds. 
+
+## Simulation
 
 All simulation are performed at acceleration level, using a sampling time of 1 ms.
 
