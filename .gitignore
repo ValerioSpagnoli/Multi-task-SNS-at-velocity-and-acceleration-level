@@ -1,5 +1,5 @@
 # folder store
-*.DS_Store
+**/.DS_Store
 
 # default autosave extension
 *.asv

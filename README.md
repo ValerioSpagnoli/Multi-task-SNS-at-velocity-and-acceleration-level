@@ -1,6 +1,6 @@
 # Multi task Saturation in the Null Space (SNS) method at acceleration and velocity level
 
-This repository contain the framework for computing the Saturation in the Null Space method at acceleration and velocity level.
+This repository contain the framework for computing the Saturation in the Null Space method at acceleration and velocity level, using preemptive prioritization strategy.
 
 The reference papers are:
 - F. Flacco, A. De Luca and O. Khatib, "Prioritized multi-task motion control of redundant robots under hard joint constraints," 2012 IEEE/RSJ International Conference on Intelligent Robots and Systems, Vilamoura-Algarve, Portugal, 2012, pp. 3970-3977, doi: 10.1109/IROS.2012.6385619.
