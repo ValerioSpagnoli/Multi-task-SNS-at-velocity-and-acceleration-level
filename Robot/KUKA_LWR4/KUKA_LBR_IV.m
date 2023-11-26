@@ -111,7 +111,7 @@ classdef KUKA_LBR_IV
             %% define bounds
             bounds_max_position = [deg2rad(170), deg2rad(120), deg2rad(170), deg2rad(120), deg2rad(170), deg2rad(120), deg2rad(170)];
             bounds_min_position = -bounds_max_position;
-            self.bounds_position = double([bounds_min_position;bounds_max_position]);
+            self.bounds_position = double([bounds_min_position;bounds_max_position]); 
             
             bounds_max_velocity = [deg2rad(100), deg2rad(110), deg2rad(100), deg2rad(130), deg2rad(130), deg2rad(180), deg2rad(180)];
             bounds_min_velocity = -bounds_max_velocity;

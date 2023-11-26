@@ -91,8 +91,10 @@ classdef Simulation_KUKA
             
             % compute path
             fprintf('Creating path ... ')
-            %self.path = self.create_hexagonal_path(1);
-            self.path = self.create_square_path(1);
+            % self.path = self.create_hexagonal_path(2);
+            % self.path = self.create_square_path(2);
+            self.path = self.create_segment_path();
+            % self.path = self.create_triangular_path();
             % self.path = self.create_circular_path(1);
             fprintf('done! \n');
 
@@ -162,6 +164,14 @@ classdef Simulation_KUKA
             elseif strcmp(self.robot_name, 'KUKA_LBR_IV')
                 path = [points, poly_0(:,1)]+center;
             end            
+        end
+
+        function path = create_segment_path(self)
+            path = [self.robot.ee_position_0, self.robot.ee_position_0 - [-0.1; -0.3; 0.2], self.robot.ee_position_0];
+        end
+
+        function path = create_triangular_path(self)
+        path = [[-0.35; 0.25; 1], [-0.15; 0.45; 0.8], [-0.15; 0.45; 0.9], [-0.35; 0.25; 1]];
         end
 
         % Create circular path
@@ -362,7 +372,7 @@ classdef Simulation_KUKA
 
             % Jacobians of task 3, elbow_position (time h)
             J3_h = self.robot.get_J_eb(q_h);
-            J3_dot_h = self.robot.get_J_dot_eb(q_h,q_dot_h);
+            %J3_dot_h = self.robot.get_J_dot_eb(q_h,q_dot_h);
 
             % Previous configuration (time h-1)
             q_hm1 = self.robot.q_0;
@@ -370,7 +380,7 @@ classdef Simulation_KUKA
 
             % Jacobian of task 1, ee_position (time h-1)
             J1_hm1 = self.robot.get_J_ee(q_hm1);                 
-            J3_hm1 = self.robot.get_J_eb(q_hm1);   
+            %J3_hm1 = self.robot.get_J_eb(q_hm1);   
 
    
             % Set PD controller gains of task 1
@@ -387,7 +397,7 @@ classdef Simulation_KUKA
             joints_accelerations = [zeros(n,1)]; 
             ee_positions = [ee_position_h];
             ee_velocities = [J1_h*q_dot_h];
-            elbow_positions = [link_1_position_h];
+            elbow_positions = [elbow_position_h];
             elbow_velocities = [J3_h*q_dot_h];
             directional_errors = [];
             
@@ -397,7 +407,7 @@ classdef Simulation_KUKA
             saturation_counter = 0;
 
             while true                
-                if norm(ee_position_h - x_d) < 0.005
+                if norm(ee_position_h - x_d) < self.epsilon
                     k = k+1;       
                     if k>size(self.path,2)
                         break;
@@ -416,16 +426,6 @@ classdef Simulation_KUKA
                 m2 = length(q_ddot_cs);
 
                 % TASK 3: elbow
-                % elbow_target_point = [0.1; 0.4; 0.3105];                
-                % if(norm(elbow_target_point-elbow_position_h)==0)
-                %    x3_dot_d_h = zeros(3,1);
-                %    x3_ddot_d_h = zeros(3,1);
-                % else
-                %    V3_h = Kp_3*norm(elbow_target_point - elbow_position_h) - Kd_3*norm(J3_hm1*q_dot_hm1);
-                %    x3_dot_d_h = V3_h * ((elbow_target_point - elbow_position_h) / norm(elbow_target_point - elbow_position_h));
-                %    x3_ddot_d_h = (x3_dot_d_h-J3_hm1*q_dot_hm1) / T;
-                % end
-                % m3 = length(x3_ddot_d_h);
 
                 % x3_dot_d_h = -50*elbow_position_h(2);
                 % x3_ddot_d_h = (x3_dot_d_h - J3_h(2,:)*q_dot_h)/T;
@@ -434,8 +434,8 @@ classdef Simulation_KUKA
                 % SNS solution
                 % q_ddot_new = SNS_acceleration_multitask(n, {m1}, {J1_h}, {J1_dot_h}, {x1_ddot_d_h}, bounds, q_h, q_dot_h, T, false);                                
                 q_ddot_new = SNS_acceleration_multitask(n, {m1, m2}, {J1_h, J2_h}, {J1_dot_h, J2_dot_h}, {x1_ddot_d_h, q_ddot_cs}, bounds, q_h, q_dot_h, T, false);                                                
-                % q_ddot_new = SNS_acceleration_multitask(n, {m1, m3}, {J1_h, J3_h(2,:)}, {J1_dot_h, J3_dot_h(2,:)}, {x1_ddot_d_h, x3_ddot_d_h}, bounds, q_h, q_dot_h, T, false);                                                                                
-
+                % q_ddot_new = SNS_acceleration_multitask(n, {m1, m3}, {J1_h, J3_h}, {J1_dot_h, J3_dot_h}, {x1_ddot_d_h, x3_ddot_d_h}, bounds, q_h, q_dot_h, T, false);                                                                                
+                
                 q_dot_new = q_dot_h + q_ddot_new*T;
                 q_new = q_h + q_dot_h*T + 0.5*q_ddot_new*T^2;
 
@@ -452,15 +452,15 @@ classdef Simulation_KUKA
                 fprintf('k = %d\n', k);
                 fprintf('norm(ee_position_h - x_d) = ');disp(norm(ee_position_h-x_d))      
                 fprintf('\n');
+                fprintf('ee_position_0      =');disp(self.robot.ee_position_0');
                 fprintf('x_d                = ');disp(x_d');
-                fprintf('ee_position_h      = ');disp(ee_position_h');                
-                % fprintf('elbow_target_point = ');disp(elbow_target_point')
+                fprintf('ee_position_h      = ');disp(ee_position_h');                                
                 fprintf('elbow_position_h   =');disp(elbow_position_h');                
                 fprintf('\n');
                 fprintf('x1_dot_d_h         = ');disp(x1_dot_d_h');
                 fprintf('x1_ddot_d_h        = ');disp(x1_ddot_d_h');                  
-                % fprintf('x3_dot_d_h         = ');disp(x3_dot_d_h');
-                % fprintf('x3_ddot_d_h        = ');disp(x3_ddot_d_h');   
+                %fprintf('x3_dot_d_h         = ');disp(x3_dot_d_h');
+                %fprintf('x3_ddot_d_h        = ');disp(x3_ddot_d_h');   
                 fprintf('\n');
                 fprintf('q_ddot_new         = ');disp(q_ddot_new')
                 fprintf('q_dot_new          = ');disp(q_dot_new')
@@ -475,7 +475,7 @@ classdef Simulation_KUKA
                 % set previous configuration to current configuration ...
                 q_dot_hm1 = q_dot_h;               
                 J1_hm1 = J1_h;   
-                J3_hm1 = J3_h;                
+                %J3_hm1 = J3_h;                
         
                 % update current cunfiguration to new configuration
                 q_h = q_new;
@@ -487,7 +487,7 @@ classdef Simulation_KUKA
                 ee_position_h = self.robot.get_ee_position(q_h);                      
 
                 J3_h = self.robot.get_J_eb(q_h);
-                J3_dot_h = self.robot.get_J_dot_eb(q_h, q_dot_h);
+                %J3_dot_h = self.robot.get_J_dot_eb(q_h, q_dot_h);
                 elbow_position_h = self.robot.get_elbow_position(q_h);                      
              
                 % Directional error
@@ -499,7 +499,7 @@ classdef Simulation_KUKA
                 joints_accelerations = [joints_accelerations, q_ddot_h]; 
                 ee_positions = [ee_positions, ee_position_h];
                 ee_velocities = [ee_velocities, J1_h*q_dot_h];
-                elbow_positions = [elbow_positions, link_1_position_h];
+                elbow_positions = [elbow_positions, elbow_position_h];
                 elbow_velocities = [elbow_velocities, J3_h*q_dot_h];
                 directional_errors = [directional_errors, e_d];            
             end

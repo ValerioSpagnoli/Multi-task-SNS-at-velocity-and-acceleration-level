@@ -25,7 +25,7 @@ classdef MATLAB_simulation
         function self = MATLAB_simulation(sim)
             
             clear figure;
-            self.folder_path = '/Users/valeriospagnoli/Documents/MATLAB/Robotics/MultiTask_SNS/Simulation/Results/Planar4R/task1_task3/Plots/';
+            self.folder_path = '/Users/valeriospagnoli/Documents/MATLAB/Robotics/MultiTask_SNS/Simulation/Results/KUKA_LBR_IV/Segment/task1_task2/Plots/';
             self.title_font_size = 30;
             self.label_font_size = 22;
             self.legend_font_size = 18;
@@ -35,11 +35,11 @@ classdef MATLAB_simulation
                 self.robot_model = importrobot('iiwa7.urdf'); 
                 self.robot_model.DataFormat = 'row';
             elseif strcmp(self.robot.name, 'KUKA_LBR_IV')                
-                [self.robot_model] = importrobot('KUKA_LBR_IV.urdf');                             
-                self.robot_model.DataFormat = 'row';
-            elseif strcmp(self.robot.name, 'Planar4R')
-                %self.robot_model = importrobot('Planar4R.urdf', 'urdf'); 
+                %[self.robot_model] = importrobot('KUKA_LBR_IV.urdf');                             
                 %self.robot_model.DataFormat = 'row';
+            elseif strcmp(self.robot.name, 'Planar4R')
+                self.robot_model = importrobot('Planar4R.urdf', 'urdf'); 
+                self.robot_model.DataFormat = 'row';
             end
 
             self.bounds = {self.robot.bounds_position, self.robot.bounds_velocity, self.robot.bounds_acceleration};
@@ -162,21 +162,34 @@ classdef MATLAB_simulation
                     view([az, el]);
                 end
             elseif strcmp(self.robot.name, 'KUKA_LBR_IIWA_7_R800') || strcmp(self.robot.name, 'KUKA_LBR_IV')
-                az = 80;
-                el = 15;
-                
-                xlim([-1 1]);
-                ylim([-1 1]);
-                zlim([0 1.5]);
-
-                zoomFactor = 0.8;   
-                zoomPoint = [0.1; 0.3; 0.7];
-                xlim([zoomPoint(1) - zoomFactor, zoomPoint(1) + zoomFactor]);
-                ylim([zoomPoint(2) - zoomFactor, zoomPoint(2) + zoomFactor]);
-                zlim([0, zoomPoint(3) + zoomFactor]);
-                [x, y, z] = meshgrid(-5:0.2:5, -5:0.2:5, 0:0);
-                surf(x, y, z, 'FaceColor','0.2,0.2,0.2', 'FaceAlpha','0.2'); hold on; 
-                view([az, el]);
+                if isobject(robot_arm)
+                    az = 80;
+                    el = 15;
+                    
+                    xlim([-1 1]);
+                    ylim([-1 1]);
+                    zlim([0 1.5]);
+    
+                    zoomFactor = 0.8;   
+                    zoomPoint = [0.1; 0.3; 0.7];
+                    xlim([zoomPoint(1) - zoomFactor, zoomPoint(1) + zoomFactor]);
+                    ylim([zoomPoint(2) - zoomFactor, zoomPoint(2) + zoomFactor]);
+                    zlim([0, zoomPoint(3) + zoomFactor]);
+                    [x, y, z] = meshgrid(-5:0.2:5, -5:0.2:5, 0:0);
+                    surf(x, y, z, 'FaceColor','0.2,0.2,0.2', 'FaceAlpha','0.2'); hold on; 
+                    view([az, el]);
+                else
+                    az = 0; 
+                    el = 45;  
+                    
+                    zoomFactor = 0.8;   
+                    zoomPoint = [0.1; 0.3; 0.7];
+                    xlim([zoomPoint(1) - zoomFactor, zoomPoint(1) + zoomFactor]);
+                    ylim([zoomPoint(2) - zoomFactor, zoomPoint(2) + zoomFactor]);
+                    zlim([0, zoomPoint(3) + zoomFactor]);
+   
+                    view([az, el]);
+                end
             end
             
 
@@ -205,6 +218,15 @@ classdef MATLAB_simulation
                 if isobject(robot_arm)
                     show(robot_arm, interpolated_joints_positions(k,:), 'PreservePlot', false);                    
                 end
+
+                bounds_min_position = self.bounds{1}(1,:);
+                bounds_max_position = self.bounds{1}(2,:);
+                
+                for i=1:self.robot.n
+                    if interpolated_joints_positions(k,i) > bounds_max_position(i) || interpolated_joints_positions(k,i) < bounds_min_position(i)
+                        fprintf('Joint %d out of bounds\n', i);
+                    end
+                end
               
                 p1.XData(k) = interpolated_ee_positions(k,1);
                 p1.YData(k) = interpolated_ee_positions(k,2);
@@ -228,13 +250,17 @@ classdef MATLAB_simulation
                 xlabel('X [m]', 'FontSize',self.label_font_size);
                 ylabel('Y [m]', 'FontSize',self.label_font_size);
             elseif strcmp(self.robot.name, 'KUKA_LBR_IIWA_7_R800') || strcmp(self.robot.name, 'KUKA_LBR_IV')
-                title('End-effector and elbow trajectories');
-                xlabel('X [m]', 'FontSize',self.title_font_size);
-                ylabel('Y [m]', 'FontSize',self.label_font_size);
-                zlabel('Z [m]', 'FontSize',self.label_font_size);
+                title('End-effector and elbow trajectories', 'FontSize',26);
+                xlabel('X [m]', 'FontSize',16);
+                ylabel('Y [m]', 'FontSize',16);
+                zlabel('Z [m]', 'FontSize',16);
             end
 
-            exportgraphics(f, strcat(self.folder_path,'path.png'));
+            if isobject(robot_arm)
+                exportgraphics(f, strcat(self.folder_path,'path_robot.png'));
+            else
+                exportgraphics(f, strcat(self.folder_path,'path.png'));
+            end
             hold off
         end
 
@@ -337,9 +363,9 @@ classdef MATLAB_simulation
                 exportgraphics(f, strcat(self.folder_path,'link1_positions.png'));
 
             elseif strcmp(self.robot.name, 'KUKA_LBR_IIWA_7_R800') || strcmp(self.robot.name, 'KUKA_LBR_IV')
-                plot(time, self.elbow_positions(1,:), 'DisplayName', 'Elbow 1 position x');hold on;                
-                plot(time, self.elbow_positions(2,:), 'DisplayName', 'Elbow 1 position y');hold on;                
-                plot(time, self.elbow_positions(3,:), 'DisplayName', 'Elbow 1 position z');hold on;                
+                plot(time, self.elbow_positions(1,:), 'DisplayName', 'Elbow position x');hold on;                
+                plot(time, self.elbow_positions(2,:), 'DisplayName', 'Elbow position y');hold on;                
+                plot(time, self.elbow_positions(3,:), 'DisplayName', 'Elbow position z');hold on;                
                            
                 grid on
                 title('Elbow positions', 'FontSize',self.title_font_size);
@@ -371,9 +397,9 @@ classdef MATLAB_simulation
                 exportgraphics(f, strcat(self.folder_path,'link1_velocities.png'));
 
             elseif strcmp(self.robot.name, 'KUKA_LBR_IIWA_7_R800') || strcmp(self.robot.name, 'KUKA_LBR_IV')
-                plot(time, self.elbow_velocities(1,:), 'DisplayName', 'Elbow 1 velocity x');hold on;                
-                plot(time, self.elbow_velocities(2,:), 'DisplayName', 'Elbow 1 velocity y');hold on;                
-                plot(time, self.elbow_velocities(3,:), 'DisplayName', 'Elbow 1 velocity z');hold on;                
+                plot(time, self.elbow_velocities(1,:), 'DisplayName', 'Elbow velocity x');hold on;                
+                plot(time, self.elbow_velocities(2,:), 'DisplayName', 'Elbow velocity y');hold on;                
+                plot(time, self.elbow_velocities(3,:), 'DisplayName', 'Elbow velocity z');hold on;                
                            
                 grid on
                 title('Elbow velocities', 'FontSize',self.title_font_size);
@@ -419,14 +445,17 @@ classdef MATLAB_simulation
                 avg_norm_elbow_velocities = 0;
                 avg_elbow_x_positions = 0;
                 avg_elbow_y_positions = 0;
+                avg_elbow_z_positions = 0;
                 for i=1:length(self.elbow_velocities)
                     avg_norm_elbow_velocities = avg_norm_elbow_velocities + norm(self.elbow_velocities(:,i));
                     avg_elbow_x_positions = avg_elbow_x_positions + self.elbow_positions(1,i);
                     avg_elbow_y_positions = avg_elbow_y_positions + self.elbow_positions(2,i);
+                    avg_elbow_z_positions = avg_elbow_z_positions + self.elbow_positions(3,i);
                 end
                 avg_norm_elbow_velocities = avg_norm_elbow_velocities/length(self.elbow_velocities);
                 avg_elbow_x_positions = avg_elbow_x_positions/length(self.elbow_positions);   
-                avg_elbow_y_positions = avg_elbow_y_positions/length(self.elbow_positions);   
+                avg_elbow_y_positions = avg_elbow_y_positions/length(self.elbow_positions); 
+                avg_elbow_z_positions = avg_elbow_z_positions/length(self.elbow_positions); 
             end
             
             fprintf('------------- TABLE -------------\n');
@@ -440,6 +469,7 @@ classdef MATLAB_simulation
             fprintf('Average elbow norm velocities:  [m/s]   ');disp(avg_norm_elbow_velocities);
             fprintf('Average elbow x-position:  [m]     ');disp(avg_elbow_x_positions);
             fprintf('Average elbow y-position:  [m]     ');disp(avg_elbow_y_positions);
+            fprintf('Average elbow z-position:  [m]     ');disp(avg_elbow_z_positions);
             end
         end
 

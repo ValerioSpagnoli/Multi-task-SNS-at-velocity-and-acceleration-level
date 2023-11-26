@@ -2,7 +2,7 @@ function siml = main()
     clear all; clc; close all;
 
     level = 'acceleration';
-    robot_name = 'Planar4R'; % Planar4R, KUKA_LBR_IV, KUKA_LBR_IIWA_7_R800
+    robot_name = 'KUKA_LBR_IV'; % Planar4R, KUKA_LBR_IV, KUKA_LBR_IIWA_7_R800
     q_0 = NaN;
     q_dot_0 = NaN;
     q_ddot_0 = NaN;
