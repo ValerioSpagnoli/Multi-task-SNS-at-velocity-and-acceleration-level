@@ -3,8 +3,8 @@
 This repository contain the framework for computing the Saturation in the Null Space method at acceleration and velocity level, using preemptive prioritization strategy.
 
 The reference papers are:
-- [F. Flacco, A. De Luca and O. Khatib, "Prioritized multi-task motion control of redundant robots under hard joint constraints," 2012 IEEE/RSJ International Conference on Intelligent Robots and Systems, Vilamoura-Algarve, Portugal, 2012, pp. 3970-3977, doi: 10.1109/IROS.2012.6385619.](https://ieeexplore.ieee.org/document/6385619)
-- [F. Flacco, A. De Luca and O. Khatib, "Motion control of redundant robots under joint constraints: Saturation in the Null Space," 2012 IEEE International Conference on Robotics and Automation, Saint Paul, MN, USA, 2012, pp. 285-292, doi: 10.1109/ICRA.2012.6225376.](https://ieeexplore.ieee.org/document/6225376)
+- F. Flacco, A. De Luca and O. Khatib, "Prioritized multi-task motion control of redundant robots under hard joint constraints," 2012 IEEE/RSJ International Conference on Intelligent Robots and Systems, Vilamoura-Algarve, Portugal, 2012, pp. 3970-3977, doi: 10.1109/IROS.2012.6385619. [Link](https://ieeexplore.ieee.org/document/6385619).
+- F. Flacco, A. De Luca and O. Khatib, "Motion control of redundant robots under joint constraints: Saturation in the Null Space," 2012 IEEE International Conference on Robotics and Automation, Saint Paul, MN, USA, 2012, pp. 285-292, doi: 10.1109/ICRA.2012.6225376. [Link](https://ieeexplore.ieee.org/document/6225376).
 
 ## Description
 
