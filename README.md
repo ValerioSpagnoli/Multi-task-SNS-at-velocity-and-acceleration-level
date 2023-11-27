@@ -47,12 +47,8 @@ All simulation are performed at acceleration level, using a sampling time of 1 m
 ```sh
 Multi-task-SNS-at-velocity-and-acceleration-level
 ├── SNS
-│   ├── Accleration
-│   │   ├── Example_4R_velocity.m
-│   │   └── SNS_accleration_velocity.m
-│   └── Velocity        
-│       ├── Example_4R_acceleration.m
-│       └── SNS_accleration_multitask.m
+│   ├── SNS_velocity_multitask.m
+│   └── SNS_accleration_multitask.m
 ├── Simulation
 │   ├── Results
 │   ├── Simulations
@@ -70,3 +66,34 @@ Multi-task-SNS-at-velocity-and-acceleration-level
     │   └── Planar4R.m    
     └── KUKA_LBR_IIWA_7R.m
 ```
+
+## Usage
+
+### Clone the repository
+```sh
+git clone https://github.com/ValerioSpagnoli/Multi-task-SNS-at-velocity-and-acceleration-level.git
+```
+
+### Run the simulation
+1. Add the repository to the MATLAB path.
+2. Open ``main.m`` and set the variables for a costum simulation:
+   1. level: <velocity, acceleration>
+   2. robot_name = <Planar4R, KUKA_LBR_IV, KUKA_LBR_IIWA_7_R800> 
+   3. q_0: initial configuration of the robot
+   4. q_dot_0: initial velocity of the robot;
+   5. q_ddot_0 = initial acceleration of the robot;
+   6. simulation_step: sampling time of the simulation;
+   7. epsilon: the tollerance with which are reached the points of the path;
+
+    **Note**: A value can be set ``NaN``. In this case the simulation will be run with the default parameter. The default parameters are configurated into the simulation files ``Simulation_KUKA.m`` and ``Simulation_Planar4R.m``.
+
+3. Run the file ``main.m`` using the following command in the MATALB console:
+    ```
+    sim = main();
+    ```
+4. Show the simulation results using the following command:
+    ```
+    matlab_simulation = MATLAB_simulation(sim);
+    ```
+    **Note**: that by setting the ``folder_path`` variable into the file ``MATLAB_simulation.m`` you can save all the plots in a personal folder.
+

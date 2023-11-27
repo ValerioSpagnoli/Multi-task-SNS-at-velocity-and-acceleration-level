@@ -22,10 +22,12 @@ classdef MATLAB_simulation
     end
 
     methods        
-        function self = MATLAB_simulation(sim)
-            
+        function self = MATLAB_simulation(sim)           
             clear figure;
-            self.folder_path = '/Users/valeriospagnoli/Documents/MATLAB/Robotics/MultiTask_SNS/Simulation/Results/KUKA_LBR_IV/Segment/task1_task2/Plots/';
+            
+            % set folder path where the plots will be saved
+            self.folder_path = '';
+                        
             self.title_font_size = 30;
             self.label_font_size = 22;
             self.legend_font_size = 18;
@@ -35,8 +37,8 @@ classdef MATLAB_simulation
                 self.robot_model = importrobot('iiwa7.urdf'); 
                 self.robot_model.DataFormat = 'row';
             elseif strcmp(self.robot.name, 'KUKA_LBR_IV')                
-                %[self.robot_model] = importrobot('KUKA_LBR_IV.urdf');                             
-                %self.robot_model.DataFormat = 'row';
+                [self.robot_model] = importrobot('KUKA_LBR_IV.urdf');                             
+                self.robot_model.DataFormat = 'row';
             elseif strcmp(self.robot.name, 'Planar4R')
                 self.robot_model = importrobot('Planar4R.urdf', 'urdf'); 
                 self.robot_model.DataFormat = 'row';
@@ -256,10 +258,13 @@ classdef MATLAB_simulation
                 zlabel('Z [m]', 'FontSize',16);
             end
 
-            if isobject(robot_arm)
-                exportgraphics(f, strcat(self.folder_path,'path_robot.png'));
-            else
-                exportgraphics(f, strcat(self.folder_path,'path.png'));
+            if ~strcmp(self.folder_path , '')
+                self.folder_path = strcat('results/',self.robot.name,'/');            
+                if isobject(robot_arm)
+                    exportgraphics(f, strcat(self.folder_path,'path_robot.png'));
+                else
+                    exportgraphics(f, strcat(self.folder_path,'path.png'));
+                end
             end
             hold off
         end
@@ -277,8 +282,11 @@ classdef MATLAB_simulation
             hold on
             title('Directional errors', 'FontSize',self.title_font_size);
             xlabel('Time [s]', 'FontSize',self.label_font_size);
-            ylabel('Directional errors [rad]', 'FontSize',self.label_font_size);            
-            exportgraphics(f, strcat(self.folder_path,'directional_errors.png'));
+            ylabel('Directional errors [rad]', 'FontSize',self.label_font_size);    
+
+            if ~strcmp(self.folder_path , '')
+                exportgraphics(f, strcat(self.folder_path,'directional_errors.png'));
+            end
         end
         
         %% Plot joints positions
@@ -297,8 +305,11 @@ classdef MATLAB_simulation
             title('Joints positions', 'FontSize',self.title_font_size);
             xlabel('Time [s]', 'FontSize',self.label_font_size);
             ylabel('Joints positions [rad]', 'FontSize',self.label_font_size);
-            legend('Location', 'best', 'Orientation', 'vertical', 'FontSize',self.legend_font_size);            
-            exportgraphics(f, strcat(self.folder_path,'joints_positions.png'));
+            legend('Location', 'best', 'Orientation', 'vertical', 'FontSize',self.legend_font_size);    
+
+            if ~strcmp(self.folder_path , '')        
+                exportgraphics(f, strcat(self.folder_path,'joints_positions.png'));
+            end
         end
         
         %% Plot joints velocities
@@ -317,8 +328,11 @@ classdef MATLAB_simulation
             title('Joints velocities', 'FontSize',self.title_font_size);
             xlabel('Time [s]', 'FontSize',self.label_font_size);
             ylabel('Joints velocities [rad/s]', 'FontSize',self.label_font_size);
-            legend('Location', 'best', 'Orientation', 'vertical', 'FontSize',self.legend_font_size);            
-            exportgraphics(f, strcat(self.folder_path,'joints_velocities.png'));
+            legend('Location', 'best', 'Orientation', 'vertical', 'FontSize',self.legend_font_size); 
+
+            if ~strcmp(self.folder_path , '')           
+                exportgraphics(f, strcat(self.folder_path,'joints_velocities.png'));
+            end
         end
 
         %% Plot joints accelerations
@@ -337,8 +351,11 @@ classdef MATLAB_simulation
             title('Joints accelerations', 'FontSize',self.title_font_size);
             xlabel('Time [s]', 'FontSize',self.label_font_size);
             ylabel('Joints accelerations [rad/s^2]', 'FontSize',self.label_font_size);
-            legend('Location', 'best', 'Orientation', 'vertical', 'FontSize',self.legend_font_size);            
-            exportgraphics(f, strcat(self.folder_path,'joints_accelerations.png'));
+            legend('Location', 'best', 'Orientation', 'vertical', 'FontSize',self.legend_font_size); 
+
+            if ~strcmp(self.folder_path , '')           
+                exportgraphics(f, strcat(self.folder_path,'joints_accelerations.png'));
+            end
         end
 
 
@@ -359,8 +376,11 @@ classdef MATLAB_simulation
                 title('Link 1 positions', 'FontSize',self.title_font_size);
                 xlabel('Time [s]', 'FontSize',self.label_font_size);
                 ylabel('Link 1 positions [m]', 'FontSize',self.label_font_size);
-                legend('Location', 'best', 'Orientation', 'vertical', 'FontSize',self.legend_font_size);                
-                exportgraphics(f, strcat(self.folder_path,'link1_positions.png'));
+                legend('Location', 'best', 'Orientation', 'vertical', 'FontSize',self.legend_font_size);   
+
+                if ~strcmp(self.folder_path , '')           
+                    exportgraphics(f, strcat(self.folder_path,'link1_positions.png'));
+                end                             
 
             elseif strcmp(self.robot.name, 'KUKA_LBR_IIWA_7_R800') || strcmp(self.robot.name, 'KUKA_LBR_IV')
                 plot(time, self.elbow_positions(1,:), 'DisplayName', 'Elbow position x');hold on;                
@@ -371,8 +391,11 @@ classdef MATLAB_simulation
                 title('Elbow positions', 'FontSize',self.title_font_size);
                 xlabel('Time [s]', 'FontSize',self.label_font_size);
                 ylabel('Elbow positions [m]', 'FontSize',self.label_font_size);
-                legend('Location', 'best', 'Orientation', 'vertical', 'FontSize',self.legend_font_size);                
-                exportgraphics(f, strcat(self.folder_path,'elbow_positions.png'));
+                legend('Location', 'best', 'Orientation', 'vertical', 'FontSize',self.legend_font_size);    
+
+                if ~strcmp(self.folder_path , '')            
+                    exportgraphics(f, strcat(self.folder_path,'elbow_positions.png'));
+                end
             end            
         end
 
@@ -393,8 +416,11 @@ classdef MATLAB_simulation
                 title('Link 1 velocities', 'FontSize',self.title_font_size);
                 xlabel('Time [s]', 'FontSize',self.label_font_size);
                 ylabel('Link 1 velocities [m/s]', 'FontSize',self.label_font_size);
-                legend('Location', 'best', 'Orientation', 'vertical', 'FontSize',self.legend_font_size);                
-                exportgraphics(f, strcat(self.folder_path,'link1_velocities.png'));
+                legend('Location', 'best', 'Orientation', 'vertical', 'FontSize',self.legend_font_size);  
+
+                if ~strcmp(self.folder_path , '')            
+                    exportgraphics(f, strcat(self.folder_path,'link1_velocities.png'));
+                end                              
 
             elseif strcmp(self.robot.name, 'KUKA_LBR_IIWA_7_R800') || strcmp(self.robot.name, 'KUKA_LBR_IV')
                 plot(time, self.elbow_velocities(1,:), 'DisplayName', 'Elbow velocity x');hold on;                
@@ -405,8 +431,11 @@ classdef MATLAB_simulation
                 title('Elbow velocities', 'FontSize',self.title_font_size);
                 xlabel('Time [s]', 'FontSize',self.label_font_size);
                 ylabel('Elbow velocities [m/s]', 'FontSize',self.label_font_size);
-                legend('Location', 'best', 'Orientation', 'vertical', 'FontSize',self.legend_font_size);                
-                exportgraphics(f, strcat(self.folder_path,'elbow_velocities.png'));
+                legend('Location', 'best', 'Orientation', 'vertical', 'FontSize',self.legend_font_size);   
+
+                if ~strcmp(self.folder_path , '')            
+                    exportgraphics(f, strcat(self.folder_path,'elbow_velocities.png'));
+                end             
             end
         end
 

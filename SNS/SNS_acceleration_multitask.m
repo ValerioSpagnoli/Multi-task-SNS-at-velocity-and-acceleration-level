@@ -60,8 +60,7 @@ function [q_ddot_bar_k, saturated_joints] = algorithm_3(n, m_k, x_ddot_k, J_k, J
     P_bar_star_k = eye(n);
     q_ddot_star_N_k = zeros(n,1);
     s_star_k = 0;
-    most_critical_joint_star = -1;
-    saturated_joints_star = saturated_joints;    
+    most_critical_joint = -1;
 
     W_k = eye(n);
     q_ddot_N_k = zeros(n,1);
@@ -80,7 +79,6 @@ function [q_ddot_bar_k, saturated_joints] = algorithm_3(n, m_k, x_ddot_k, J_k, J
         if verbose
         fprintf('**********************************************************\n')
         fprintf('while loop %d\n\n', while_loop);   
-
         end
 
         limit_exceeded = false;
@@ -158,13 +156,10 @@ function [q_ddot_bar_k, saturated_joints] = algorithm_3(n, m_k, x_ddot_k, J_k, J
             % current best task scaling factor, save the current
             % configuration
             if task_scaling_factor > s_star_k
-                saved_best_config = true;
                 s_star_k = task_scaling_factor;
-                most_critical_joint_star = most_critical_joint;
                 W_star_k = W_k;
                 q_ddot_star_N_k = q_ddot_N_k;
                 P_bar_star_k = P_bar_k;
-                saturated_joints_star = saturated_joints;
 
                 if verbose
                 fprintf('..........................................................\n')
@@ -173,7 +168,6 @@ function [q_ddot_bar_k, saturated_joints] = algorithm_3(n, m_k, x_ddot_k, J_k, J
                 fprintf('    P_bar_star_k = \n');disp(P_bar_star_k);
                 fprintf('    s_stark_k = ');disp(s_star_k);
                 fprintf('    q_ddot_star_N_k = ');disp(q_ddot_star_N_k');
-                fprintf('    saturated_joints_star = ');disp(saturated_joints_star);
                 fprintf('..........................................................\n')
                 end    
             end
@@ -210,11 +204,9 @@ function [q_ddot_bar_k, saturated_joints] = algorithm_3(n, m_k, x_ddot_k, J_k, J
             % found so far
             if rank(J_k*P_bar_k) < m_k
                 s_k = s_star_k;
-                most_critical_joint = most_critical_joint_star;
                 W_k = W_star_k;
                 P_bar_k = P_bar_star_k;
                 q_ddot_N_k = q_ddot_star_N_k;
-                saturated_joints = saturated_joints_star;  
 
                 q_ddot_bar_N_k = pinv((eye(n)-W_k)*P_km1) * q_ddot_N_k;
                 q_ddot_tilde_k = q_ddot_bar_km1 + q_ddot_bar_N_k;                

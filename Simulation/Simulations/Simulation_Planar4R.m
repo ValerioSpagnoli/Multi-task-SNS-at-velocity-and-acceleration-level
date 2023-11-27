@@ -100,7 +100,7 @@ classdef Simulation_Planar4R
         end
 
         %% run simulation velocity level
-        function [joints_positions, joints_velocities, directional_errors] = run_simulation_velocity_level(self)
+        function [joints_positions, joints_velocities, ee_positions, ee_velocities, link_1_positions, link_1_velocities, directional_errors] = run_simulation_velocity_level(self)
 
             n = self.robot.n;
             bounds = {self.robot.bounds_position, self.robot.bounds_velocity, self.robot.bounds_acceleration};
@@ -139,7 +139,11 @@ classdef Simulation_Planar4R
                  
             % All configurations during task
             joints_positions = [q_h];  
-            joints_velocities = [q_dot_h];            
+            joints_velocities = [q_dot_h]; 
+            ee_positions = [ee_position_h];
+            ee_velocities = [J1_h*q_dot_h];
+            link_1_positions = [link_1_position_h];
+            link_1_velocities = [J2_h*q_dot_h];
             directional_errors = [];
             
             k = 1;
@@ -177,35 +181,25 @@ classdef Simulation_Planar4R
 
                 q_new = q_h + q_dot_new*T;
 
-                bounds_min_velocity = bounds{3}(1,:);
-                bounds_max_velocity = bounds{3}(2,:);               
-                for i=1:n
-                    if round(q_dot_new(i),4)>round(bounds_max_velocity(i),4) || round(q_dot_new(i),4)<round(bounds_min_velocity(i),4)                        
-                        saturation_counter = saturation_counter+1;
-                    end
-                end
-
                 fprintf('==============================================================================\n')
-
                 fprintf('k = %d\n', k);
                 fprintf('norm(ee_position_h - x_d) = ');disp(norm(ee_position_h-x_d))      
-                fprintf('\n');
-                fprintf('x_d               = ');disp(x_d');
-                fprintf('ee_position_h     = ');disp(ee_position_h');
-                fprintf('link_1_position_h = ');disp(link_1_position_h');              
-                fprintf('\n');
-                fprintf('x1_dot_d_h        = ');disp(x1_dot_d_h');
-                fprintf('x1_ddot_d_h       = ');disp(x1_ddot_d_h');   
-                fprintf('x2_dot_d_h        = ');disp(x2_dot_d_h');
-                fprintf('x2_ddot_d_h       = ');disp(x2_ddot_d_h');   
-                fprintf('\n');
-                fprintf('q_ddot_new        = ');disp(q_ddot_new')
-                fprintf('q_dot_new         = ');disp(q_dot_new')
-                fprintf('q_new             = ');disp(q_new')
-                fprintf('saturation_counter= ');disp(saturation_counter) 
-                fprintf('==============================================================================\n')
+                % fprintf('\n');
+                % fprintf('x_d               = ');disp(x_d');
+                % fprintf('ee_position_h     = ');disp(ee_position_h');
+                % fprintf('link_1_position_h = ');disp(link_1_position_h');              
+                % fprintf('\n');
+                % fprintf('x1_dot_d_h        = ');disp(x1_dot_d_h');
+                % fprintf('x1_ddot_d_h       = ');disp(x1_ddot_d_h');   
+                % fprintf('x2_dot_d_h        = ');disp(x2_dot_d_h');
+                % fprintf('x2_ddot_d_h       = ');disp(x2_ddot_d_h');   
+                % fprintf('\n');
+                % fprintf('q_ddot_new        = ');disp(q_ddot_new')
+                % fprintf('q_dot_new         = ');disp(q_dot_new')
+                % fprintf('q_new             = ');disp(q_new')
+                % fprintf('==============================================================================\n')
 
-                if isnan(q_ddot_new)
+                if isnan(q_dot_new)
                     break;
                 end
 
@@ -230,7 +224,11 @@ classdef Simulation_Planar4R
 
                 % Save new configuration
                 joints_positions = [joints_positions, q_h];
-                joints_velocities = [joints_velocities, q_dot_h];                
+                joints_velocities = [joints_velocities, q_dot_h];
+                ee_positions = [ee_positions, ee_position_h];
+                ee_velocities = [ee_velocities, J1_h*q_dot_h];
+                link_1_positions = [link_1_positions, link_1_position_h];
+                link_1_velocities = [link_1_velocities, J2_h*q_dot_h];
                 directional_errors = [directional_errors, e_d];
 
             end
@@ -297,8 +295,6 @@ classdef Simulation_Planar4R
             x_d = self.path(1:3,k);
             link_1_target_position = [0.25;0;0];
             
-            saturation_counter = 0;
-
             while true                
                 if norm(ee_position_h - x_d) < self.epsilon
                     k = k+1;       
@@ -326,7 +322,7 @@ classdef Simulation_Planar4R
 
 
                 % SNS solution single task (first task)
-                q_ddot_new = SNS_acceleration_multitask(n, {m1}, {J1_h(1:2,:)}, {J1_dot_h(1:2,:)}, {x1_ddot_d_h}, bounds, q_h, q_dot_h, T, false);                                
+                q_ddot_new = SNS_acceleration_multitask(n, {m1}, {J1_h}, {J1_dot_h}, {x1_ddot_d_h}, bounds, q_h, q_dot_h, T, false);                                
                  
                 % SNS solution multiple task (first + second task)
                 % q_ddot_new = SNS_acceleration_multitask(n, {m1, m2}, {J1_h(1:2,:), J2_h(1:2,:)}, {J1_dot_h(1:2,:), J2_dot_h(1:2,:)}, {x1_ddot_d_h, x2_ddot_d_h}, bounds, q_h, q_dot_h, T, false);                                                
@@ -338,34 +334,25 @@ classdef Simulation_Planar4R
                 q_dot_new = q_dot_h + q_ddot_new*T;
                 q_new = q_h + q_dot_h*T + 0.5*q_ddot_new*T^2;
 
-                bounds_min_acceleration = bounds{3}(1,:);
-                bounds_max_acceleration = bounds{3}(2,:);               
-                for i=1:n
-                    if round(q_ddot_new(i),4)>round(bounds_max_acceleration(i),4) || round(q_ddot_new(i),4)<round(bounds_min_acceleration(i),4)                        
-                        saturation_counter = saturation_counter+1;
-                    end
-                end
-
                 fprintf('==============================================================================\n')
 
                 fprintf('k = %d\n', k);
                 fprintf('norm(ee_position_h - x_d) = ');disp(norm(ee_position_h-x_d))      
-                fprintf('\n');
-                fprintf('x_d               = ');disp(x_d');
-                fprintf('ee_position_h     = ');disp(ee_position_h');
-                fprintf('link_1_position_h = ');disp(link_1_position_h');              
-                fprintf('\n');
-                fprintf('x1_dot_d_h        = ');disp(x1_dot_d_h');
-                fprintf('x1_ddot_d_h       = ');disp(x1_ddot_d_h');   
-                fprintf('m1                = ');disp(m1);
-                fprintf('x2_dot_d_h        = ');disp(x2_dot_d_h');
-                fprintf('x2_ddot_d_h       = ');disp(x2_ddot_d_h');   
-                fprintf('\n');
-                fprintf('q_ddot_new        = ');disp(q_ddot_new')
-                fprintf('q_dot_new         = ');disp(q_dot_new')
-                fprintf('q_new             = ');disp(q_new')
-                fprintf('saturation_counter= ');disp(saturation_counter) 
-                fprintf('==============================================================================\n')
+                % fprintf('\n');
+                % fprintf('x_d               = ');disp(x_d');
+                % fprintf('ee_position_h     = ');disp(ee_position_h');
+                % fprintf('link_1_position_h = ');disp(link_1_position_h');              
+                % fprintf('\n');
+                % fprintf('x1_dot_d_h        = ');disp(x1_dot_d_h');
+                % fprintf('x1_ddot_d_h       = ');disp(x1_ddot_d_h');   
+                % fprintf('m1                = ');disp(m1);
+                % fprintf('x2_dot_d_h        = ');disp(x2_dot_d_h');
+                % fprintf('x2_ddot_d_h       = ');disp(x2_ddot_d_h');   
+                % fprintf('\n');
+                % fprintf('q_ddot_new        = ');disp(q_ddot_new')
+                % fprintf('q_dot_new         = ');disp(q_dot_new')
+                % fprintf('q_new             = ');disp(q_new')
+                % fprintf('==============================================================================\n')
 
                 if isnan(q_ddot_new)
                     break;
